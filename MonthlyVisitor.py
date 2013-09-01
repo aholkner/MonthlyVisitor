@@ -1,5 +1,6 @@
 import bacon
 
+import heapq
 from math import floor, sqrt
 
 GAME_WIDTH = 800
@@ -256,12 +257,22 @@ class Rect(object):
         bacon.fill_rect(self.x1, self.y1, self.x2, self.y2)
 
 class Tile(object):
-    def __init__(self, rect, walkable=True, accept_items=True):
+    path_cost = 1
+    path_closed = False
+    path_parent = None
+    path_current = False
+
+    def __init__(self, tx, ty, rect, walkable=True, accept_items=True):
+        self.tx = tx
+        self.ty = ty
         self.rect = rect
         self._walkable = walkable
         self.accept_items = accept_items
         self.can_target = True
         self.items = []
+
+    def __lt__(self, other):
+        return (self.tx, self.ty) < (other.tx, other.ty)
 
     def is_walkable(self):
         return self._walkable
@@ -286,12 +297,12 @@ class Tilemap(object):
         for row in range(rows):
             x = 0
             for col in range(cols):
-                self.tiles.append(Tile(Rect(x, y, x + ts, y + ts)))
+                self.tiles.append(Tile(col, row, Rect(x, y, x + ts, y + ts)))
                 x += ts
             y += ts
 
         # default tile
-        self.tiles.append(Tile(Rect(0, 0, 0, 0), walkable=False, accept_items=False))
+        self.tiles.append(Tile(-1, -1, Rect(0, 0, 0, 0), walkable=False, accept_items=False))
         self.tiles[-1].can_target = False
 
     def get_tile_index(self, x, y):
@@ -314,6 +325,78 @@ class Tilemap(object):
 
     def get_bounds(self):
         return Rect(0, 0, self.cols * self.tile_size, self.rows * self.tile_size)
+
+    def get_path(self, start_tile, arrived_func, heuristic_func):
+        # http://stackoverflow.com/questions/4159331/python-speed-up-an-a-star-pathfinding-algorithm
+        for tile in self.tiles:
+            tile.path_parent = None
+            tile.path_closed = False
+            tile.path_open = False
+            tile.path_current = False
+        
+        def retrace(c):
+            path = [c]
+            while c.path_parent is not None:
+                c.path_current = True
+                c = c.path_parent
+                path.append(c)
+            path.reverse()
+            return path
+        
+        def candidates(tile):
+            tx = tile.tx
+            ty = tile.ty
+            i = ty * self.cols + tx
+            left = right = up = down = None
+            if tx > 0:
+                left = self.tiles[i - 1]
+                yield left
+            if tx < self.cols - 1:
+                right = self.tiles[i + 1]
+                yield right
+            if ty > 0:
+                up = self.tiles[i - self.cols]
+                yield up
+            if ty < self.rows - 1:
+                down = self.tiles[i + self.cols]
+                yield down
+            if left and left.walkable:
+                if up and up.walkable:
+                    yield self.tiles[i - self.cols - 1]
+                if down and down.walkable:
+                    yield self.tiles[i + self.cols - 1]
+            if right and right.walkable:
+                if up and up.walkable:
+                    yield self.tiles[i - self.cols + 1]
+                if down and down.walkable:
+                    yield self.tiles[i + self.cols + 1]
+
+        open = []
+        open.append((0, start_tile))
+        while open:
+            score, current = heapq.heappop(open)
+            if arrived_func(current):
+                return retrace(current)
+            current.path_closed = True
+            for tile in candidates(current):
+                if not tile.path_closed and not tile.path_open:
+                    g = heuristic_func(tile)
+                    tile.path_open = True
+                    heapq.heappush(open, (score + g, tile))
+                    tile.path_parent = current
+        return []
+
+def path_arrived(destination):
+    def func(tile):
+        return tile is destination
+    return func
+
+def path_heuristic_player(destination):
+    def func(tile):
+        if not tile.walkable:
+            return 99999
+        return abs(destination.tx - tile.tx) + abs(destination.ty - tile.ty)
+    return func
 
 class Camera(object):
     def __init__(self):
@@ -375,15 +458,19 @@ player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
 inventory = Inventory()
 
-rock_anim = Anim([Frame('rock.png', 16, 32)])
+rock_anim = Anim([Frame('rock.png', 16, 16)])
 meat_anim = Anim([Frame('meat.png', 16, 16)])
 scenery = [
-    Sprite(rock_anim, 100, 200)
+    Sprite(rock_anim, 32*2, 32*8),
+    Sprite(rock_anim, 32*2, 32*7),
+    Sprite(rock_anim, 32*2, 32*6),
 ]
-tilemap.get_tile_at(scenery[0].x, scenery[0].y).walkable = False
-tilemap.get_tile_at(scenery[0].x, scenery[0].y).accept_items = False
+for sprite in scenery:
+    tilemap.get_tile_at(sprite.x, sprite.y).walkable = False
+    tilemap.get_tile_at(sprite.x, sprite.y).accept_items = False
 
 tilemap.get_tile_at(32+16, 32+16).items.append(Item(meat_anim, 32+16, 32+16))
+tilemap.get_tile_at(32*8+16, 32*4+16).items.append(Item(meat_anim, 32*8+16, 32*4+16))
 
 class Game(bacon.Game):
     def on_tick(self):
@@ -407,6 +494,15 @@ class Game(bacon.Game):
         self.draw_ui()
     
     def draw_world(self):
+        for tile in tilemap.tiles:
+            if tile.path_current:
+                bacon.set_color(0, 0, 1, 1)
+                tile.rect.fill()
+            elif tile.path_closed:
+                bacon.set_color(1, 1, 0, 1)
+                tile.rect.fill()
+        bacon.set_color(1, 1, 1, 1)
+
         for prop in scenery:
             prop.draw()
             tilemap.get_tile_rect(prop.x, prop.y).draw()
@@ -442,5 +538,6 @@ class Game(bacon.Game):
                 tile = tilemap.tiles[ti]
                 if tile.can_target:
                     player.target_tile = tile
+                    tilemap.get_path(tilemap.get_tile_at(player.x, player.y), path_arrived(tile), path_heuristic_player(tile))
 
 bacon.run(Game())
