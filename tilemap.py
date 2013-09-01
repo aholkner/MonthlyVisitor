@@ -1,6 +1,7 @@
 from math import floor
 import heapq
 
+import bacon
 from common import Rect
 
 class Tile(object):
@@ -8,8 +9,9 @@ class Tile(object):
     path_closed = False
     path_parent = None
     path_current = False
+    image = None
 
-    def __init__(self, tx, ty, rect, walkable=True, accept_items=True):
+    def __init__(self, tx, ty, rect, image=None, walkable=True, accept_items=True):
         self.tx = tx
         self.ty = ty
         self.rect = rect
@@ -72,6 +74,12 @@ class Tilemap(object):
 
     def get_bounds(self):
         return Rect(0, 0, self.cols * self.tile_width, self.rows * self.tile_height)
+
+    def draw(self):
+        for tile in self.tiles:
+            if tile.image:
+                r = tile.rect
+                bacon.draw_image(tile.image, r.x1, r.y1, r.x2, r.y2)
 
     def get_path(self, start_tile, arrived_func, heuristic_func):
         # http://stackoverflow.com/questions/4159331/python-speed-up-an-a-star-pathfinding-algorithm

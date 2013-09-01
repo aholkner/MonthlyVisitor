@@ -128,8 +128,8 @@ class Sprite(object):
 
     def draw(self):
         frame = self.frame
-        x = self.x - frame.pivot_x
-        y = self.y - frame.pivot_y
+        x = int(self.x - frame.pivot_x)
+        y = int(self.y - frame.pivot_y)
         bacon.draw_image(frame.image, x, y)
 
         # Update animation for next frame
@@ -345,8 +345,8 @@ class Game(bacon.Game):
         
         player.update_walk_target_movement()
 
-        camera.x = player.x
-        camera.y = player.y
+        camera.x = int(player.x)
+        camera.y = int(player.y)
 
         bacon.clear(0.8, 0.7, 0.6, 1.0)
         bacon.push_transform()
@@ -357,15 +357,20 @@ class Game(bacon.Game):
         self.draw_ui()
     
     def draw_world(self):
-        for tile in tilemap.tiles:
-            if tile.path_current:
-                bacon.set_color(0, 0, 1, 1)
-                tile.rect.fill()
-            elif tile.path_closed:
-                bacon.set_color(1, 1, 0, 1)
-                tile.rect.fill()
+        bacon.set_color(1, 1, 1, 1)
+        tilemap.draw()
+
+        if False:
+            for tile in tilemap.tiles:
+                if tile.path_current:
+                    bacon.set_color(0, 0, 1, 1)
+                    tile.rect.fill()
+                elif tile.path_closed:
+                    bacon.set_color(1, 1, 0, 1)
+                    tile.rect.fill()
         bacon.set_color(1, 1, 1, 1)
 
+        
         for prop in scenery:
             prop.draw()
             tilemap.get_tile_rect(prop.x, prop.y).draw()
@@ -376,8 +381,11 @@ class Game(bacon.Game):
 
         bacon.set_color(0, 0, 1, 1)
         tilemap.get_tile_rect(player.x, player.y).draw()
+        
         bacon.set_color(1, 0, 0, 1)
+        
         tilemap.get_bounds().draw()
+        
         
     def draw_ui(self):
         bacon.set_color(0, 0, 0, 1)
