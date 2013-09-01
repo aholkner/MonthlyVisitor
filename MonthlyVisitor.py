@@ -86,6 +86,12 @@ class Sprite(object):
         self.frame = self.anim.frames[frame_index % len(self.anim.frames)]
     time = property(get_time, set_time)
 
+    @property
+    def rect(self):
+        x = self.x - self.frame.pivot_x
+        y = self.y - self.frame.pivot_y
+        return Rect(x, y, x + self.frame.image.width, y + self.frame.image.height)
+
     def move_with_collision(self, tilemap, dx, dy):
         # Slice movement into tile-sized blocks for collision testing
         size = sqrt(dx * dx + dy * dy)
@@ -96,8 +102,8 @@ class Sprite(object):
 
             # Move along X
             incx = inc * dx
-            ti = tilemap.get_tile_index(self.x + incx, self.y)
-            if tilemap.tiles[ti].walkable:
+            tile = tilemap.get_tile_at(self.x + incx, self.y)
+            if tile.walkable:
                 self.x += incx
             elif dx > 0:
                 self.x = tilemap.get_tile_rect(self.x + incx, self.y).x1 - 1
@@ -106,8 +112,8 @@ class Sprite(object):
 
             # Move along Y
             incy = inc * dy
-            ti = tilemap.get_tile_index(self.x, self.y + incy)
-            if tilemap.tiles[ti].walkable:
+            tile = tilemap.get_tile_at(self.x, self.y + incy)
+            if tile.walkable:
                 self.y += incy
             elif dy > 0:
                 self.y = tilemap.get_tile_rect(self.x, self.y + incy).y1 - 1
@@ -165,6 +171,22 @@ class Character(Sprite):
 
         self.anim = self.get_anim()
 
+    def get_drop_tile(self):
+        x = self.x
+        y = self.y
+        if self.facing == 'up':
+            y -= tilemap.tile_size
+        elif self.facing == 'down':
+            y += tilemap.tile_size
+        elif self.facing == 'left':
+            x -= tilemap.tile_size
+        elif self.facing == 'right':
+            x += tilemap.tile_size
+        return tilemap.get_tile_at(x, y)
+
+class Item(Sprite):
+    pass
+
 class Rect(object):
     def __init__(self, x1, y1, x2, y2):
         self.x1 = x1
@@ -188,6 +210,12 @@ class Rect(object):
     def center_y(self):
         return (self.y1 + self.y2) / 2
 
+    def contains(self, x, y):
+        return (x >= self.x1 and
+                x <= self.x2 and
+                y >= self.y1 and
+                y <= self.y2)
+
     def draw(self):
         bacon.draw_rect(self.x1, self.y1, self.x2, self.y2)
 
@@ -195,8 +223,22 @@ class Rect(object):
         bacon.fill_rect(self.x1, self.y1, self.x2, self.y2)
 
 class Tile(object):
-    def __init__(self, walkable=True):
-        self.walkable = walkable
+    def __init__(self, rect, walkable=True, accept_items=True):
+        self.rect = rect
+        self._walkable = walkable
+        self.accept_items = accept_items
+        self.items = []
+
+    def is_walkable(self):
+        return self._walkable and not self.items
+    def set_walkable(self, walkable):
+        self._walkable = walkable
+    walkable = property(is_walkable, set_walkable)
+
+    def add_item(self, item):
+        self.items.append(item)
+        item.x = self.rect.center_x
+        item.y = self.rect.center_y
 
 class Tilemap(object):
     tile_size = 32
@@ -204,10 +246,18 @@ class Tilemap(object):
     def __init__(self, cols, rows):
         self.cols = cols
         self.rows = rows
-        self.tiles = [Tile() for i in range(cols * rows + 1)]
+        self.tiles = []
+        ts = self.tile_size
+        y = 0
+        for row in range(rows):
+            x = 0
+            for col in range(cols):
+                self.tiles.append(Tile(Rect(x, y, x + ts, y + ts)))
+                x += ts
+            y += ts
 
         # default tile
-        self.tiles[-1] = Tile(walkable=False)
+        self.tiles.append(Tile(Rect(0, 0, 0, 0), walkable=False, accept_items=False))
 
     def get_tile_index(self, x, y):
         tx = floor(x / self.tile_size)
@@ -238,18 +288,67 @@ class Camera(object):
     def apply(self):
         bacon.translate(-self.x + GAME_WIDTH / 2, -self.y + GAME_HEIGHT / 2)
 
+    def view_to_world(self, x, y):
+        return x + self.x - GAME_WIDTH / 2, y + self.y - GAME_HEIGHT / 2
+
+class Inventory(object):
+    def __init__(self):
+        self.items = []
+        self.x = 0
+        self.y = GAME_HEIGHT - 32
+        self.item_size_x = 32
+        self.item_size_y = 32
+
+    def get_item_at(self, x, y):
+        for item in self.items:
+            if item.rect.contains(x, y):
+                return item
+
+    def pick_up(self, tile):
+        item = tile.items[-1]
+        self.items.append(item)
+        del tile.items[-1]
+        item.x = self.x + len(self.items) * self.item_size_x
+        item.y = self.y
+
+    def drop(self, item, tile):
+        tile.add_item(item)
+        self.items.remove(item)
+        
+    def draw(self):
+        bacon.set_color(1, 1, 1, 1)
+        x = 0
+        for item in self.items:
+            item.draw()
+            x += 32
+
+    def on_mouse_button(self, button, pressed):
+        if pressed and button == bacon.MouseButtons.left:
+            item = self.get_item_at(bacon.mouse.x, bacon.mouse.y)
+            if item:
+                tile = player.get_drop_tile()
+                if tile and tile.accept_items:
+                    self.drop(item, tile)
+                return True
+        return False
+
 tilemap = Tilemap(10, 10)
 
 camera = Camera()
 
 player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
+inventory = Inventory()
 
 rock_anim = Anim([Frame('rock.png', 16, 32)])
+meat_anim = Anim([Frame('meat.png', 16, 16)])
 scenery = [
     Sprite(rock_anim, 100, 200)
 ]
 tilemap.get_tile_at(scenery[0].x, scenery[0].y).walkable = False
+tilemap.get_tile_at(scenery[0].x, scenery[0].y).accept_items = False
+
+tilemap.get_tile_at(32+16, 32+16).items.append(Item(meat_anim, 32+16, 32+16))
 
 class Game(bacon.Game):
     def on_tick(self):
@@ -257,17 +356,40 @@ class Game(bacon.Game):
         camera.x = player.x
         camera.y = player.y
 
-        bacon.clear(0.4, 0.3, 0.1, 1.0)
+        bacon.clear(0.8, 0.7, 0.6, 1.0)
+        bacon.push_transform()
         camera.apply()
-        
+        self.draw_world()
+        bacon.pop_transform()
+
+        self.draw_ui()
+    
+    def draw_world(self):
         for prop in scenery:
             prop.draw()
             tilemap.get_tile_rect(prop.x, prop.y).draw()
+        for tile in tilemap.tiles:
+            for item in tile.items:
+                item.draw()
         player.draw()
 
         bacon.set_color(0, 0, 1, 1)
         tilemap.get_tile_rect(player.x, player.y).draw()
         bacon.set_color(1, 0, 0, 1)
         tilemap.get_bounds().draw()
+        
+    def draw_ui(self):
+        inventory.draw()
+
+    def on_mouse_button(self, button, pressed):
+        if inventory.on_mouse_button(button, pressed):
+            return
+
+        if pressed and button == bacon.MouseButtons.left:
+            x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
+            ti = tilemap.get_tile_index(x, y)
+            tile = tilemap.tiles[ti]
+            if tile.items:
+                inventory.pick_up(tile)
 
 bacon.run(Game())
