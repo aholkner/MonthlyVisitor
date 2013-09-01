@@ -92,11 +92,12 @@ class Sprite(object):
         y = self.y - self.frame.pivot_y
         return Rect(x, y, x + self.frame.image.width, y + self.frame.image.height)
 
-    def move_with_collision(self, tilemap, dx, dy):
+    def move_with_collision(self, tilemap, dx, dy, speed):
         # Slice movement into tile-sized blocks for collision testing
         size = sqrt(dx * dx + dy * dy)
         dx /= size
         dy /= size
+        size = min(size, speed * bacon.timestep)
         while size > 0:
             inc = min(size, tilemap.tile_size / 2)
 
@@ -133,12 +134,14 @@ class Sprite(object):
 
 class Character(Sprite):
     walk_speed = 200
+    pick_up_distance = 2
     facing = 'down'
     action = 'idle'
 
     def __init__(self, anims, x, y):
         self.anims = anims
         super(Character, self).__init__(self.get_anim(), x, y)
+        self.target_tile = None
 
     def get_anim(self):
         try:
@@ -146,43 +149,57 @@ class Character(Sprite):
         except KeyError:
             return self.anims[self.action]
 
-    def update_player_movement(self, tilemap):
+    def update_player_movement(self):
         dx = 0
         dy = 0
         if bacon.Keys.up in bacon.keys:
-            dy += -1
-            self.facing = 'up'
+            dy += -32
         if bacon.Keys.down in bacon.keys:
-            dy += 1
-            self.facing = 'down'
+            dy += 32
         if bacon.Keys.left in bacon.keys:
-            dx += -1 
-            self.facing = 'left'
+            dx += -32 
         if bacon.Keys.right in bacon.keys:
-            dx += 1
-            self.facing = 'right'
+            dx += 32
 
         if dx or dy:
-            speed = self.walk_speed / sqrt(dx * dx + dy * dy) * bacon.timestep
-            self.move_with_collision(tilemap, dx * speed, dy * speed)
+            self.update_facing(dx, dy)
+            self.move_with_collision(tilemap, dx, dy, self.walk_speed)
+            self.target_tile = None
             self.action = 'walk'
-        else:
+        elif not self.target_tile:
             self.action = 'idle'
 
         self.anim = self.get_anim()
 
+    def update_walk_target_movement(self):
+        if not self.target_tile:
+            return
+
+        dx = self.target_tile.rect.center_x - self.x
+        dy = self.target_tile.rect.center_y - self.y
+        self.update_facing(dx, dy)
+        distance = sqrt(dx * dx + dy * dy)
+        if distance <= self.pick_up_distance:
+            if self.target_tile.items:
+                inventory.pick_up(self.target_tile)
+            self.target_tile = None
+            self.action = 'idle'
+        else:
+            self.move_with_collision(tilemap, dx, dy, self.walk_speed)
+            self.action = 'walk'
+
+    def update_facing(self, dx, dy):
+        if dy < 0:
+            self.facing = 'up'
+        if dy > 0:
+            self.facing = 'down'
+        if dx < 0:
+            self.facing = 'left'
+        if dx > 0:
+            self.facing = 'right'
+
     def get_drop_tile(self):
-        x = self.x
-        y = self.y
-        if self.facing == 'up':
-            y -= tilemap.tile_size
-        elif self.facing == 'down':
-            y += tilemap.tile_size
-        elif self.facing == 'left':
-            x -= tilemap.tile_size
-        elif self.facing == 'right':
-            x += tilemap.tile_size
-        return tilemap.get_tile_at(x, y)
+        return tilemap.get_tile_at(self.x, self.y)
 
 class Item(Sprite):
     pass
@@ -227,10 +244,11 @@ class Tile(object):
         self.rect = rect
         self._walkable = walkable
         self.accept_items = accept_items
+        self.can_target = True
         self.items = []
 
     def is_walkable(self):
-        return self._walkable and not self.items
+        return self._walkable
     def set_walkable(self, walkable):
         self._walkable = walkable
     walkable = property(is_walkable, set_walkable)
@@ -258,6 +276,7 @@ class Tilemap(object):
 
         # default tile
         self.tiles.append(Tile(Rect(0, 0, 0, 0), walkable=False, accept_items=False))
+        self.tiles[-1].can_target = False
 
     def get_tile_index(self, x, y):
         tx = floor(x / self.tile_size)
@@ -352,7 +371,8 @@ tilemap.get_tile_at(32+16, 32+16).items.append(Item(meat_anim, 32+16, 32+16))
 
 class Game(bacon.Game):
     def on_tick(self):
-        player.update_player_movement(tilemap)
+        player.update_player_movement()
+        player.update_walk_target_movement()
         camera.x = player.x
         camera.y = player.y
 
@@ -389,7 +409,7 @@ class Game(bacon.Game):
             x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
             ti = tilemap.get_tile_index(x, y)
             tile = tilemap.tiles[ti]
-            if tile.items:
-                inventory.pick_up(tile)
+            if tile.can_target:
+                player.target_tile = tile
 
 bacon.run(Game())
