@@ -1,0 +1,6 @@
+*.pyc
+*.pyo
+bacon.log
+debug.txt
+*.sublime-project
+*.sublime-workspace
