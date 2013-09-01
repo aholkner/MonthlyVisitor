@@ -136,7 +136,7 @@ class Sprite(object):
 
 class Character(Sprite):
     walk_speed = 200
-    pick_up_distance = 2
+    path_arrive_distance = 2
     facing = 'down'
     action = 'idle'
 
@@ -145,13 +145,19 @@ class Character(Sprite):
     def __init__(self, anims, x, y):
         self.anims = anims
         super(Character, self).__init__(self.get_anim(), x, y)
-        self.target_tile = None
+        self.path = None
 
     def get_anim(self):
         try:
             return self.anims[self.action + '_' + self.facing]
         except KeyError:
             return self.anims[self.action]
+
+    def walk(self, arrived_func, hueristic_func):
+        self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func)
+
+    def walk_to_tile(self, tile):
+        self.walk(path_arrived(tile), path_heuristic_player(tile))
 
     def update_player_movement(self):
         dx = 0
@@ -168,24 +174,26 @@ class Character(Sprite):
         if dx or dy:
             self.update_facing(dx, dy)
             self.move_with_collision(tilemap, dx, dy, self.walk_speed)
-            self.target_tile = None
+            self.path = None
             self.action = 'walk'
-        elif not self.target_tile:
+        elif not self.path:
             self.action = 'idle'
 
     def update_walk_target_movement(self):
-        if not self.target_tile:
+        if not self.path:
             return
 
-        dx = self.target_tile.rect.center_x - self.x
-        dy = self.target_tile.rect.center_y - self.y
+        target_tile = self.path[0]
+        dx = target_tile.rect.center_x - self.x
+        dy = target_tile.rect.center_y - self.y
         self.update_facing(dx, dy)
         distance = sqrt(dx * dx + dy * dy)
-        if distance <= self.pick_up_distance:
-            if self.target_tile.items:
-                inventory.pick_up(self.target_tile)
-            self.target_tile = None
-            self.action = 'idle'
+        if distance <= self.path_arrive_distance:
+            del self.path[0]
+            if not self.path:
+                self.action = 'idle'
+                if target_tile.items:
+                    inventory.pick_up(target_tile)
         else:
             self.move_with_collision(tilemap, dx, dy, self.walk_speed)
             self.action = 'walk'
@@ -207,12 +215,10 @@ class Character(Sprite):
         pass
 
     def update_wolf_motives(self):
-        if not self.target_tile:
-            # Search for nearby food
-            for tile in tilemap.tiles:
-                if tile.items:
-                    self.target_tile = tile
-                    break
+        if not self.path:
+            # Search for nearby food -- note that the returned path is not optimal, but
+            # looks more organic anyway
+            self.walk(path_arrived_food(), path_hueristic_search())
 
     def get_drop_tile(self):
         return tilemap.get_tile_at(self.x, self.y)
@@ -381,7 +387,7 @@ class Tilemap(object):
                 if not tile.path_closed and not tile.path_open:
                     g = heuristic_func(tile)
                     tile.path_open = True
-                    heapq.heappush(open, (score + g, tile))
+                    heapq.heappush(open, (score + g + 1, tile))
                     tile.path_parent = current
         return []
 
@@ -394,7 +400,19 @@ def path_heuristic_player(destination):
     def func(tile):
         if not tile.walkable:
             return 99999
-        return abs(destination.tx - tile.tx) + abs(destination.ty - tile.ty)
+        return abs(destination.tx - tile.tx) + abs(destination.ty - tile.ty) + tile.path_cost
+    return func
+
+def path_arrived_food():
+    def func(tile):
+        return tile.items
+    return func
+
+def path_hueristic_search():
+    def func(tile):
+        if not tile.walkable:
+            return 99999
+        return tile.path_cost
     return func
 
 class Camera(object):
@@ -536,7 +554,6 @@ class Game(bacon.Game):
                 ti = tilemap.get_tile_index(x, y)
                 tile = tilemap.tiles[ti]
                 if tile.can_target:
-                    player.target_tile = tile
-                    tilemap.get_path(tilemap.get_tile_at(player.x, player.y), path_arrived(tile), path_heuristic_player(tile))
+                    player.walk_to_tile(tile)
 
 bacon.run(Game())
