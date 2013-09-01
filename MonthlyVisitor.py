@@ -9,7 +9,6 @@ GAME_HEIGHT = 500
 bacon.window.title = 'Monthly Visitor'
 bacon.window.width = GAME_WIDTH
 bacon.window.height = GAME_HEIGHT
-#bacon.window.target = bacon.Image(width=GAME_WIDTH, height=GAME_HEIGHT, atlas=0)
 
 font_ui = bacon.Font(None, 16)
 
@@ -311,7 +310,7 @@ class Tilemap(object):
         if (tx < 0 or tx >= self.cols or
             ty < 0 or ty >= self.rows):
             return len(self.tiles) - 1
-        return ty * self.cols + tx
+        return int(ty * self.cols + tx)
 
     def get_tile_at(self, x, y):
         return self.tiles[self.get_tile_index(x, y)]
