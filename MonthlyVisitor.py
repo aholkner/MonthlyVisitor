@@ -10,6 +10,7 @@ GAME_HEIGHT = 500
 bacon.window.title = 'Monthly Visitor'
 bacon.window.width = GAME_WIDTH
 bacon.window.height = GAME_HEIGHT
+bacon.window.resizable = True
 
 font_ui = bacon.Font(None, 16)
 
@@ -21,7 +22,7 @@ def load_image(name):
     try:
         return image_cache[name]
     except KeyError:
-        image = image_cache[name] = bacon.Image('res/' + name, atlas=0) # atlas=0 workaround for #43
+        image = image_cache[name] = bacon.Image('res/' + name)
         return image
 
 class SpriteSheet(object):
