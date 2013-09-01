@@ -75,11 +75,19 @@ class Tilemap(object):
     def get_bounds(self):
         return Rect(0, 0, self.cols * self.tile_width, self.rows * self.tile_height)
 
-    def draw(self):
-        for tile in self.tiles:
-            if tile.image:
-                r = tile.rect
-                bacon.draw_image(tile.image, r.x1, r.y1, r.x2, r.y2)
+    def draw(self, rect):
+        tx1 = max(0, int(floor(rect.x1 / self.tile_width)))
+        ty1 = max(0, int(floor(rect.y1 / self.tile_height)))
+        tx2 = min(self.cols, int(floor(rect.x2 / self.tile_width)) + 1)
+        ty2 = min(self.rows, int(floor(rect.y2 / self.tile_height)) + 1)
+        for ty in range(ty1, ty2):
+            ti = ty * self.cols + tx1
+            for tx in range(tx1, tx2):
+                tile = self.tiles[ti]
+                if tile.image:
+                    r = tile.rect
+                    bacon.draw_image(tile.image, r.x1, r.y1, r.x2, r.y2)
+                ti += 1
 
     def get_path(self, start_tile, arrived_func, heuristic_func):
         # http://stackoverflow.com/questions/4159331/python-speed-up-an-a-star-pathfinding-algorithm

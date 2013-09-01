@@ -269,6 +269,9 @@ class Camera(object):
     def view_to_world(self, x, y):
         return x + self.x - GAME_WIDTH / 2, y + self.y - GAME_HEIGHT / 2
 
+    def get_bounds(self):
+        return Rect(self.x - GAME_WIDTH / 2, self.y - GAME_HEIGHT / 2, self.x + GAME_WIDTH /2 , self.y + GAME_HEIGHT / 2)
+
 class Inventory(object):
     def __init__(self):
         self.items = []
@@ -358,7 +361,7 @@ class Game(bacon.Game):
     
     def draw_world(self):
         bacon.set_color(1, 1, 1, 1)
-        tilemap.draw()
+        tilemap.draw(camera.get_bounds())
 
         if False:
             for tile in tilemap.tiles:
