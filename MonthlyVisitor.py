@@ -1,7 +1,8 @@
-import bacon
-
-import heapq
 from math import floor, sqrt
+
+import bacon
+import tiled
+from common import Rect
 
 GAME_WIDTH = 800
 GAME_HEIGHT = 500
@@ -101,7 +102,7 @@ class Sprite(object):
         dy /= size
         size = min(size, speed * bacon.timestep)
         while size > 0:
-            inc = min(size, tilemap.tile_size / 2)
+            inc = min(size, tilemap.tile_width / 2, tilemap.tile_height / 2)
 
             # Move along X
             incx = inc * dx
@@ -231,170 +232,7 @@ class Character(Sprite):
 class Item(Sprite):
     food_value = 0.5
 
-class Rect(object):
-    def __init__(self, x1, y1, x2, y2):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
 
-    @property
-    def width(self):
-        return self.x2 - self.x1
-
-    @property
-    def height(self):
-        return self.y2 - self.y1
-
-    @property
-    def center_x(self):
-        return (self.x1 + self.x2) / 2
-
-    @property
-    def center_y(self):
-        return (self.y1 + self.y2) / 2
-
-    def contains(self, x, y):
-        return (x >= self.x1 and
-                x <= self.x2 and
-                y >= self.y1 and
-                y <= self.y2)
-
-    def draw(self):
-        bacon.draw_rect(self.x1, self.y1, self.x2, self.y2)
-
-    def fill(self):
-        bacon.fill_rect(self.x1, self.y1, self.x2, self.y2)
-
-class Tile(object):
-    path_cost = 1
-    path_closed = False
-    path_parent = None
-    path_current = False
-
-    def __init__(self, tx, ty, rect, walkable=True, accept_items=True):
-        self.tx = tx
-        self.ty = ty
-        self.rect = rect
-        self._walkable = walkable
-        self.accept_items = accept_items
-        self.can_target = True
-        self.items = []
-
-    def __lt__(self, other):
-        return (self.tx, self.ty) < (other.tx, other.ty)
-
-    def is_walkable(self):
-        return self._walkable
-    def set_walkable(self, walkable):
-        self._walkable = walkable
-    walkable = property(is_walkable, set_walkable)
-
-    def add_item(self, item):
-        self.items.append(item)
-        item.x = self.rect.center_x
-        item.y = self.rect.center_y
-
-class Tilemap(object):
-    tile_size = 32
-
-    def __init__(self, cols, rows):
-        self.cols = cols
-        self.rows = rows
-        self.tiles = []
-        ts = self.tile_size
-        y = 0
-        for row in range(rows):
-            x = 0
-            for col in range(cols):
-                self.tiles.append(Tile(col, row, Rect(x, y, x + ts, y + ts)))
-                x += ts
-            y += ts
-
-        # default tile
-        self.tiles.append(Tile(-1, -1, Rect(0, 0, 0, 0), walkable=False, accept_items=False))
-        self.tiles[-1].can_target = False
-
-    def get_tile_index(self, x, y):
-        tx = floor(x / self.tile_size)
-        ty = floor(y / self.tile_size)
-        if (tx < 0 or tx >= self.cols or
-            ty < 0 or ty >= self.rows):
-            return len(self.tiles) - 1
-        return int(ty * self.cols + tx)
-
-    def get_tile_at(self, x, y):
-        return self.tiles[self.get_tile_index(x, y)]
-
-    def get_tile_rect(self, x, y):
-        tx = floor(x / self.tile_size)
-        ty = floor(y / self.tile_size)
-        x = tx * self.tile_size
-        y = ty * self.tile_size
-        return Rect(x, y, x + self.tile_size, y + self.tile_size)
-
-    def get_bounds(self):
-        return Rect(0, 0, self.cols * self.tile_size, self.rows * self.tile_size)
-
-    def get_path(self, start_tile, arrived_func, heuristic_func):
-        # http://stackoverflow.com/questions/4159331/python-speed-up-an-a-star-pathfinding-algorithm
-        for tile in self.tiles:
-            tile.path_parent = None
-            tile.path_closed = False
-            tile.path_open = False
-            tile.path_current = False
-        
-        def retrace(c):
-            path = [c]
-            while c.path_parent is not None:
-                c.path_current = True
-                c = c.path_parent
-                path.append(c)
-            path.reverse()
-            return path
-        
-        def candidates(tile):
-            tx = tile.tx
-            ty = tile.ty
-            i = ty * self.cols + tx
-            left = right = up = down = None
-            if tx > 0:
-                left = self.tiles[i - 1]
-                yield left
-            if tx < self.cols - 1:
-                right = self.tiles[i + 1]
-                yield right
-            if ty > 0:
-                up = self.tiles[i - self.cols]
-                yield up
-            if ty < self.rows - 1:
-                down = self.tiles[i + self.cols]
-                yield down
-            if left and left.walkable:
-                if up and up.walkable:
-                    yield self.tiles[i - self.cols - 1]
-                if down and down.walkable:
-                    yield self.tiles[i + self.cols - 1]
-            if right and right.walkable:
-                if up and up.walkable:
-                    yield self.tiles[i - self.cols + 1]
-                if down and down.walkable:
-                    yield self.tiles[i + self.cols + 1]
-
-        open = []
-        open.append((0, start_tile))
-        while open:
-            score, current = heapq.heappop(open)
-            if arrived_func(current):
-                return retrace(current)
-            current.path_closed = True
-            for tile in candidates(current):
-                if not tile.path_closed and not tile.path_open:
-                    g = heuristic_func(tile)
-                    tile.path_open = True
-                    heapq.heappush(open, (score + g + 1, tile))
-                    tile.path_parent = current
-        return []
 
 def path_arrived(destination):
     def func(tile):
@@ -475,7 +313,7 @@ class Inventory(object):
                 return True
         return False
 
-tilemap = Tilemap(10, 10)
+tilemap = tiled.parse('res/desert.tmx')
 
 camera = Camera()
 
