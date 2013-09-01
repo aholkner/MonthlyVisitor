@@ -189,14 +189,17 @@ class Character(Sprite):
             self.action = 'walk'
 
     def update_facing(self, dx, dy):
-        if dy < 0:
-            self.facing = 'up'
-        if dy > 0:
-            self.facing = 'down'
-        if dx < 0:
+        if abs(dy) > abs(dx * 2):
+            if dy < 0:
+                self.facing = 'up'
+            elif dy > 0:
+                self.facing = 'down'
+        elif dx < 0:
             self.facing = 'left'
-        if dx > 0:
+        elif dx > 0:
             self.facing = 'right'
+        
+        
 
     def get_drop_tile(self):
         return tilemap.get_tile_at(self.x, self.y)
