@@ -141,6 +141,8 @@ class Character(Sprite):
     action = 'idle'
 
     is_wolf = False
+    motive_food = 1.0
+    motive_food_trigger = 0.5
 
     def __init__(self, anims, x, y):
         self.anims = anims
@@ -212,19 +214,22 @@ class Character(Sprite):
             self.facing = 'right'
         
     def update_player_motives(self):
-        pass
+        self.motive_food = max(self.motive_food - bacon.timestep * 0.01, 0)
 
     def update_wolf_motives(self):
-        if not self.path:
-            # Search for nearby food -- note that the returned path is not optimal, but
-            # looks more organic anyway
-            self.walk(path_arrived_food(), path_hueristic_search())
+        self.motive_food = max(self.motive_food - bacon.timestep * 0.05, 0)
+
+        if self.motive_food < self.motive_food_trigger:
+            if not self.path:
+                # Search for nearby food -- note that the returned path is not optimal, but
+                # looks more organic anyway
+                self.walk(path_arrived_food(), path_hueristic_search())
 
     def get_drop_tile(self):
         return tilemap.get_tile_at(self.x, self.y)
 
 class Item(Sprite):
-    pass
+    food_value = 0.5
 
 class Rect(object):
     def __init__(self, x1, y1, x2, y2):
@@ -446,6 +451,9 @@ class Inventory(object):
         item.x = self.x + len(self.items) * self.item_size_x
         item.y = self.y
 
+        if item.food_value:
+            player.motive_food = min(player.motive_food + item.food_value, 1.0)
+
     def drop(self, item, tile):
         tile.add_item(item)
         self.items.remove(item)
@@ -534,6 +542,10 @@ class Game(bacon.Game):
         tilemap.get_bounds().draw()
         
     def draw_ui(self):
+        bacon.set_color(0, 0, 0, 1)
+        if player.motive_food < player.motive_food_trigger:
+            bacon.set_color(1, 0, 0, 1)
+        bacon.draw_string(font_ui, 'Food level: %d%%' % round(player.motive_food * 100), GAME_WIDTH, 32, align=bacon.Alignment.right)
         inventory.draw()
 
         if player.is_wolf:
