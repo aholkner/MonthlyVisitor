@@ -1,5 +1,7 @@
 import bacon
 
+from math import floor, sqrt
+
 GAME_WIDTH = 800
 GAME_HEIGHT = 500
 
@@ -41,7 +43,7 @@ def lpc_anims(image):
     down = sheet.cells[2]
     right = sheet.cells[3]
     def make_anim(images):
-        anim = Anim([Frame(image, image.width / 2, image.height) for image in images])
+        anim = Anim([Frame(image, image.width / 2, image.height - 10) for image in images])
         anim.time_per_frame = 0.1
         return anim
 
@@ -84,6 +86,36 @@ class Sprite(object):
         self.frame = self.anim.frames[frame_index % len(self.anim.frames)]
     time = property(get_time, set_time)
 
+    def move_with_collision(self, tilemap, dx, dy):
+        # Slice movement into tile-sized blocks for collision testing
+        size = sqrt(dx * dx + dy * dy)
+        dx /= size
+        dy /= size
+        while size > 0:
+            inc = min(size, tilemap.tile_size / 2)
+
+            # Move along X
+            incx = inc * dx
+            ti = tilemap.get_tile_index(self.x + incx, self.y)
+            if tilemap.tiles[ti].walkable:
+                self.x += incx
+            elif dx > 0:
+                self.x = tilemap.get_tile_rect(self.x + incx, self.y).x1 - 1
+            elif dx < 0:
+                self.x = tilemap.get_tile_rect(self.x + incx, self.y).x2 + 1
+
+            # Move along Y
+            incy = inc * dy
+            ti = tilemap.get_tile_index(self.x, self.y + incy)
+            if tilemap.tiles[ti].walkable:
+                self.y += incy
+            elif dy > 0:
+                self.y = tilemap.get_tile_rect(self.x, self.y + incy).y1 - 1
+            elif dy < 0:
+                self.y = tilemap.get_tile_rect(self.x, self.y + incy).y2 + 1
+
+            size -= inc
+
     def draw(self):
         frame = self.frame
         x = self.x - frame.pivot_x
@@ -94,7 +126,7 @@ class Sprite(object):
         self.time += bacon.timestep
 
 class Character(Sprite):
-    walk_speed = 300
+    walk_speed = 200
     facing = 'down'
     action = 'idle'
 
@@ -108,7 +140,7 @@ class Character(Sprite):
         except KeyError:
             return self.anims[self.action]
 
-    def update_player_movement(self):
+    def update_player_movement(self, tilemap):
         dx = 0
         dy = 0
         if bacon.Keys.up in bacon.keys:
@@ -118,21 +150,85 @@ class Character(Sprite):
             dy += 1
             self.facing = 'down'
         if bacon.Keys.left in bacon.keys:
-            dx += -1
+            dx += -1 
             self.facing = 'left'
         if bacon.Keys.right in bacon.keys:
             dx += 1
             self.facing = 'right'
 
         if dx or dy:
-            speed = self.walk_speed / (dx * dx + dy * dy) * bacon.timestep
-            self.x += dx * speed
-            self.y += dy * speed
+            speed = self.walk_speed / sqrt(dx * dx + dy * dy) * bacon.timestep
+            self.move_with_collision(tilemap, dx * speed, dy * speed)
             self.action = 'walk'
         else:
             self.action = 'idle'
 
         self.anim = self.get_anim()
+
+class Rect(object):
+    def __init__(self, x1, y1, x2, y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+
+    @property
+    def width(self):
+        return self.x2 - self.x1
+
+    @property
+    def height(self):
+        return self.y2 - self.y1
+
+    @property
+    def center_x(self):
+        return (self.x1 + self.x2) / 2
+
+    @property
+    def center_y(self):
+        return (self.y1 + self.y2) / 2
+
+    def draw(self):
+        bacon.draw_rect(self.x1, self.y1, self.x2, self.y2)
+
+    def fill(self):
+        bacon.fill_rect(self.x1, self.y1, self.x2, self.y2)
+
+class Tile(object):
+    def __init__(self, walkable=True):
+        self.walkable = walkable
+
+class Tilemap(object):
+    tile_size = 32
+
+    def __init__(self, cols, rows):
+        self.cols = cols
+        self.rows = rows
+        self.tiles = [Tile() for i in range(cols * rows + 1)]
+
+        # default tile
+        self.tiles[-1] = Tile(walkable=False)
+
+    def get_tile_index(self, x, y):
+        tx = floor(x / self.tile_size)
+        ty = floor(y / self.tile_size)
+        if (tx < 0 or tx >= self.cols or
+            ty < 0 or ty >= self.rows):
+            return len(self.tiles) - 1
+        return ty * self.cols + tx
+
+    def get_tile_at(self, x, y):
+        return self.tiles[self.get_tile_index(x, y)]
+
+    def get_tile_rect(self, x, y):
+        tx = floor(x / self.tile_size)
+        ty = floor(y / self.tile_size)
+        x = tx * self.tile_size
+        y = ty * self.tile_size
+        return Rect(x, y, x + self.tile_size, y + self.tile_size)
+
+    def get_bounds(self):
+        return Rect(0, 0, self.cols * self.tile_size, self.rows * self.tile_size)
 
 class Camera(object):
     def __init__(self):
@@ -141,6 +237,8 @@ class Camera(object):
 
     def apply(self):
         bacon.translate(-self.x + GAME_WIDTH / 2, -self.y + GAME_HEIGHT / 2)
+
+tilemap = Tilemap(10, 10)
 
 camera = Camera()
 
@@ -151,18 +249,25 @@ rock_anim = Anim([Frame('rock.png', 16, 32)])
 scenery = [
     Sprite(rock_anim, 100, 200)
 ]
+tilemap.get_tile_at(scenery[0].x, scenery[0].y).walkable = False
 
 class Game(bacon.Game):
     def on_tick(self):
-        player.update_player_movement()
+        player.update_player_movement(tilemap)
         camera.x = player.x
         camera.y = player.y
 
         bacon.clear(0.4, 0.3, 0.1, 1.0)
         camera.apply()
-
+        
         for prop in scenery:
             prop.draw()
+            tilemap.get_tile_rect(prop.x, prop.y).draw()
         player.draw()
+
+        bacon.set_color(0, 0, 1, 1)
+        tilemap.get_tile_rect(player.x, player.y).draw()
+        bacon.set_color(1, 0, 0, 1)
+        tilemap.get_bounds().draw()
 
 bacon.run(Game())
