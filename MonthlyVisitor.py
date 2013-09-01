@@ -10,6 +10,8 @@ bacon.window.width = GAME_WIDTH
 bacon.window.height = GAME_HEIGHT
 #bacon.window.target = bacon.Image(width=GAME_WIDTH, height=GAME_HEIGHT, atlas=0)
 
+font_ui = bacon.Font(None, 16)
+
 image_cache = {}
 def load_image(name):
     if isinstance(name, bacon.Image):
@@ -138,6 +140,8 @@ class Character(Sprite):
     facing = 'down'
     action = 'idle'
 
+    is_wolf = False
+
     def __init__(self, anims, x, y):
         self.anims = anims
         super(Character, self).__init__(self.get_anim(), x, y)
@@ -169,8 +173,6 @@ class Character(Sprite):
         elif not self.target_tile:
             self.action = 'idle'
 
-        self.anim = self.get_anim()
-
     def update_walk_target_movement(self):
         if not self.target_tile:
             return
@@ -188,6 +190,8 @@ class Character(Sprite):
             self.move_with_collision(tilemap, dx, dy, self.walk_speed)
             self.action = 'walk'
 
+        self.anim = self.get_anim()
+
     def update_facing(self, dx, dy):
         if abs(dy) > abs(dx * 2):
             if dy < 0:
@@ -199,7 +203,16 @@ class Character(Sprite):
         elif dx > 0:
             self.facing = 'right'
         
-        
+    def update_player_motives(self):
+        pass
+
+    def update_wolf_motives(self):
+        if not self.target_tile:
+            # Search for nearby food
+            for tile in tilemap.tiles:
+                if tile.items:
+                    self.target_tile = tile
+                    break
 
     def get_drop_tile(self):
         return tilemap.get_tile_at(self.x, self.y)
@@ -374,8 +387,14 @@ tilemap.get_tile_at(32+16, 32+16).items.append(Item(meat_anim, 32+16, 32+16))
 
 class Game(bacon.Game):
     def on_tick(self):
-        player.update_player_movement()
+        if player.is_wolf:
+            player.update_wolf_motives()
+        else:
+            player.update_player_motives()
+            player.update_player_movement()
+        
         player.update_walk_target_movement()
+
         camera.x = player.x
         camera.y = player.y
 
@@ -404,15 +423,24 @@ class Game(bacon.Game):
     def draw_ui(self):
         inventory.draw()
 
-    def on_mouse_button(self, button, pressed):
-        if inventory.on_mouse_button(button, pressed):
-            return
+        if player.is_wolf:
+            bacon.set_color(0, 0, 0, 1)
+            bacon.draw_string(font_ui, 'WOLF', 0, 32)
 
-        if pressed and button == bacon.MouseButtons.left:
-            x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
-            ti = tilemap.get_tile_index(x, y)
-            tile = tilemap.tiles[ti]
-            if tile.can_target:
-                player.target_tile = tile
+    def on_key(self, key, pressed):
+        if pressed and key == bacon.Keys.w:
+            player.is_wolf = not player.is_wolf
+
+    def on_mouse_button(self, button, pressed):
+        if not player.is_wolf:
+            if inventory.on_mouse_button(button, pressed):
+                return
+
+            if pressed and button == bacon.MouseButtons.left:
+                x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
+                ti = tilemap.get_tile_index(x, y)
+                tile = tilemap.tiles[ti]
+                if tile.can_target:
+                    player.target_tile = tile
 
 bacon.run(Game())
