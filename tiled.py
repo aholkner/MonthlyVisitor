@@ -41,6 +41,8 @@ def parse_layer(tm, elem, tilesets):
     name = elem.get('name')
     cols = int(elem.get('width'))
     rows = int(elem.get('height'))
+    layer = tilemap.TilemapLayer(name, cols, rows)
+    tm.layers.append(layer)
 
     tx = 0
     ty = 0
@@ -55,7 +57,7 @@ def parse_layer(tm, elem, tilesets):
 
         if matching_tileset:
             image = matching_tileset.images[gid - matching_tileset.firstgid]
-            tm.tiles[ty * tm.rows + tx].image = image
+            layer.images[ty * tm.rows + tx] = image
         tx += 1
         if tx >= cols:
             tx = 0
@@ -68,7 +70,7 @@ def parse_layer(tm, elem, tilesets):
                     add_tile(int(tile.get('gid')))
 
 def parse_object_group(tm, elem):
-    layer = tilemap.ObjectLayer(elem.get('name'))
+    layer = tilemap.TilemapObjectLayer(elem.get('name'))
     tm.object_layers.append(layer)
     for object in elem:
         if object.tag == 'object':

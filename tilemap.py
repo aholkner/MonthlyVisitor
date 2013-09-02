@@ -9,9 +9,8 @@ class Tile(object):
     path_closed = False
     path_parent = None
     path_current = False
-    image = None
 
-    def __init__(self, tx, ty, rect, image=None, walkable=True, accept_items=True):
+    def __init__(self, tx, ty, rect, walkable=True, accept_items=True):
         self.tx = tx
         self.ty = ty
         self.rect = rect
@@ -40,10 +39,15 @@ class TilemapObject(object):
         self.x = x
         self.y = y
 
-class ObjectLayer(object):
+class TilemapObjectLayer(object):
     def __init__(self, name):
         self.name = name
         self.objects = []
+
+class TilemapLayer(object):
+    def __init__(self, name, cols, rows):
+        self.name = name
+        self.images = [None] * (cols * rows)
 
 class Tilemap(object):
     def __init__(self, tile_width, tile_height, cols, rows):
@@ -51,6 +55,7 @@ class Tilemap(object):
         self.tile_height = tile_height
         self.cols = cols
         self.rows = rows
+        self.layers = []
         self.object_layers = []
 
         self.tiles = []
@@ -96,9 +101,11 @@ class Tilemap(object):
             ti = ty * self.cols + tx1
             for tx in range(tx1, tx2):
                 tile = self.tiles[ti]
-                if tile.image:
-                    r = tile.rect
-                    bacon.draw_image(tile.image, r.x1, r.y1, r.x2, r.y2)
+                r = tile.rect
+                for layer in self.layers:
+                    image = layer.images[ti]
+                    if image:
+                        bacon.draw_image(image, r.x1, r.y1, r.x2, r.y2)
                 ti += 1
 
     def get_path(self, start_tile, arrived_func, heuristic_func):
