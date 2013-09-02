@@ -1,4 +1,5 @@
 from math import floor, sqrt
+# For profiling: import sys; sys.path.insert(0, '../bacon')
 
 import bacon
 import tiled
@@ -317,7 +318,7 @@ class Inventory(object):
                 return True
         return False
 
-tilemap = tiled.parse('res/desert.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 
 camera = Camera()
 
@@ -325,19 +326,8 @@ player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
 inventory = Inventory()
 
-rock_anim = Anim([Frame('rock.png', 16, 16)])
-meat_anim = Anim([Frame('meat.png', 16, 16)])
 scenery = [
-    Sprite(rock_anim, 32*2, 32*8),
-    Sprite(rock_anim, 32*2, 32*7),
-    Sprite(rock_anim, 32*2, 32*6),
 ]
-for sprite in scenery:
-    tilemap.get_tile_at(sprite.x, sprite.y).walkable = False
-    tilemap.get_tile_at(sprite.x, sprite.y).accept_items = False
-
-tilemap.get_tile_at(32+16, 32+16).items.append(Item(meat_anim, 32+16, 32+16))
-tilemap.get_tile_at(32*8+16, 32*4+16).items.append(Item(meat_anim, 32*8+16, 32*4+16))
 
 class Game(bacon.Game):
     def on_tick(self):

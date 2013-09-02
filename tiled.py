@@ -10,8 +10,8 @@ class Tileset(object):
         self.images = images
 
 def parse_tileset_images(elem, base_dir):
-    spacing = int(elem.get('spacing'))
-    margin = int(elem.get('margin'))
+    spacing = int(elem.get('spacing') or 0)
+    margin = int(elem.get('margin') or 0)
     tile_width = int(elem.get('tilewidth'))
     tile_height = int(elem.get('tileheight'))
     image = None
@@ -53,8 +53,9 @@ def parse_layer(tm, elem, tilesets):
                 break
             matching_tileset = tileset
 
-        image = matching_tileset.images[gid - matching_tileset.firstgid]
-        tm.tiles[ty * tm.rows + tx].image = image
+        if matching_tileset:
+            image = matching_tileset.images[gid - matching_tileset.firstgid]
+            tm.tiles[ty * tm.rows + tx].image = image
         tx += 1
         if tx >= cols:
             tx = 0
