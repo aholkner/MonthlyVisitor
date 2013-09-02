@@ -34,6 +34,16 @@ class Tile(object):
         item.x = self.rect.center_x
         item.y = self.rect.center_y
 
+class TilemapObject(object):
+    def __init__(self, name, x, y):
+        self.name = name
+        self.x = x
+        self.y = y
+
+class ObjectLayer(object):
+    def __init__(self, name):
+        self.name = name
+        self.objects = []
 
 class Tilemap(object):
     def __init__(self, tile_width, tile_height, cols, rows):
@@ -41,6 +51,8 @@ class Tilemap(object):
         self.tile_height = tile_height
         self.cols = cols
         self.rows = rows
+        self.object_layers = []
+
         self.tiles = []
         y = 0
         for row in range(rows):

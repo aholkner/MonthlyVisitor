@@ -67,6 +67,16 @@ def parse_layer(tm, elem, tilesets):
                 if tile.tag == 'tile':
                     add_tile(int(tile.get('gid')))
 
+def parse_object_group(tm, elem):
+    layer = tilemap.ObjectLayer(elem.get('name'))
+    tm.object_layers.append(layer)
+    for object in elem:
+        if object.tag == 'object':
+            name = object.get('name')
+            x = int(object.get('x'))
+            y = int(object.get('y'))
+            layer.objects.append(tilemap.TilemapObject(name, x, y))
+
 def parse(tmx_file):
     base_dir = os.path.dirname(tmx_file)
 
@@ -82,12 +92,15 @@ def parse(tmx_file):
     tm = tilemap.Tilemap(tile_width, tile_height, cols, rows)
     tilesets = []
     layers = []
+    object_layers = []
 
     for child in elem:
         if child.tag == 'tileset':
             tilesets.append(parse_tileset(child, base_dir))
         elif child.tag == 'layer':
             parse_layer(tm, child, tilesets)
+        elif child.tag == 'objectgroup':
+            parse_object_group(tm, child)
         
                     
     return tm

@@ -329,6 +329,12 @@ inventory = Inventory()
 scenery = [
 ]
 
+for object_layer in tilemap.object_layers:
+    for object in object_layer.objects:
+        if object.name == 'PlayerStart':
+            player.x = object.x
+            player.y = object.y
+
 class Game(bacon.Game):
     def on_tick(self):
         if player.is_wolf:
