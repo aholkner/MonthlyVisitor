@@ -83,6 +83,9 @@ class Sprite(object):
         self.x = x
         self.y = y
 
+    def __lt__(self, other):
+        return self.y < other.y
+
     def get_time(self):
         return self._time
     def set_time(self, time):
@@ -127,6 +130,7 @@ class Sprite(object):
                 self.y = tilemap.get_tile_rect(self.x, self.y + incy).y2 + 1
 
             size -= inc
+        tilemap.update_sprite_position(self)
 
     def draw(self):
         frame = self.frame
@@ -324,6 +328,7 @@ camera = Camera()
 
 player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
+tilemap.add_sprite(player)
 inventory = Inventory()
 
 scenery = [
@@ -334,6 +339,7 @@ for object_layer in tilemap.object_layers:
         if object.name == 'PlayerStart':
             player.x = object.x
             player.y = object.y
+            tilemap.update_sprite_position(player)
 
 class Game(bacon.Game):
     def on_tick(self):
@@ -377,8 +383,7 @@ class Game(bacon.Game):
         for tile in tilemap.tiles:
             for item in tile.items:
                 item.draw()
-        player.draw()
-
+        
         bacon.set_color(0, 0, 1, 1)
         tilemap.get_tile_rect(player.x, player.y).draw()
         

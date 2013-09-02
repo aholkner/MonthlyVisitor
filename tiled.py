@@ -48,7 +48,6 @@ def parse_layer(tm, elem, tilesets):
     ty = 0
     tiles = []
     def add_tile(gid):
-        nonlocal tx, ty
         matching_tileset = None
         for tileset in tilesets:
             if gid < tileset.firstgid:
@@ -58,16 +57,25 @@ def parse_layer(tm, elem, tilesets):
         if matching_tileset:
             image = matching_tileset.images[gid - matching_tileset.firstgid]
             layer.images[ty * tm.rows + tx] = image
-        tx += 1
-        if tx >= cols:
-            tx = 0
-            ty += 1
 
     for child in elem:
-        if child.tag == 'data':
+        if child.tag == 'properties':
+            for property in child:
+                if property.tag == 'property':
+                    name = property.get('name')
+                    value = property.get('value')
+                    layer.properties[name] = value
+                    if name == 'Y':
+                        layer.offset_y = -tm.tile_height * int(value)
+                        ty += int(value)
+        elif child.tag == 'data':
             for tile in child:
                 if tile.tag == 'tile':
                     add_tile(int(tile.get('gid')))
+                    tx += 1
+                    if tx >= cols:
+                        tx = 0
+                        ty += 1
 
 def parse_object_group(tm, elem):
     layer = tilemap.TilemapObjectLayer(elem.get('name'))

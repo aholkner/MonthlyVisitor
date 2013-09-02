@@ -1,4 +1,5 @@
 from math import floor
+import bisect
 import heapq
 
 import bacon
@@ -48,6 +49,12 @@ class TilemapLayer(object):
     def __init__(self, name, cols, rows):
         self.name = name
         self.images = [None] * (cols * rows)
+        self.properties = {}
+        self.offset_y = 0
+
+class TilemapScanline(object):
+    def __init__(self):
+        self.sprites = []
 
 class Tilemap(object):
     def __init__(self, tile_width, tile_height, cols, rows):
@@ -57,6 +64,8 @@ class Tilemap(object):
         self.rows = rows
         self.layers = []
         self.object_layers = []
+        self.scanlines = [TilemapScanline() for row in range(rows)]
+        self.sprite_layer_index = 5
 
         self.tiles = []
         y = 0
@@ -70,6 +79,23 @@ class Tilemap(object):
         # default tile
         self.tiles.append(Tile(-1, -1, Rect(0, 0, 0, 0), walkable=False, accept_items=False))
         self.tiles[-1].can_target = False
+
+    def add_sprite(self, sprite):
+        scan = int(floor(sprite.y / self.tile_height))
+        sprite._scanline = scan
+        bisect.insort(self.scanlines[scan].sprites, sprite)
+
+    def remove_sprite(self, sprite):
+        oldscan = sprite._scanline
+        self.scanlines[oldscan].sprites.remove(sprite)
+
+    def update_sprite_position(self, sprite):
+        oldscan = sprite._scanline
+        scan = int(floor(sprite.y / self.tile_height))
+        if scan != oldscan:
+            self.scanlines[oldscan].sprites.remove(sprite)
+            bisect.insort(self.scanlines[scan].sprites, sprite)
+            sprite._scanline = scan
 
     def get_tile_index(self, x, y):
         tx = floor(x / self.tile_width)
@@ -97,15 +123,36 @@ class Tilemap(object):
         ty1 = max(0, int(floor(rect.y1 / self.tile_height)))
         tx2 = min(self.cols, int(floor(rect.x2 / self.tile_width)) + 1)
         ty2 = min(self.rows, int(floor(rect.y2 / self.tile_height)) + 1)
+        sprite_layer_index = self.sprite_layer_index
         for ty in range(ty1, ty2):
+            ti = ty * self.cols + tx1
+
+            # Draw ground tiles
+            for tx in range(tx1, tx2):
+                tile = self.tiles[ti]
+                r = tile.rect
+                for layer in self.layers[:sprite_layer_index]:
+                    image = layer.images[ti]
+                    if image:
+                        bacon.draw_image(image, r.x1, r.y1, r.x2, r.y2)
+                ti += 1
+
+            # Draw sorted scanline sprites
+            scanline = self.scanlines[ty]
+            for sprite in scanline.sprites:
+                sprite_rect = sprite.rect
+                if sprite_rect.x2 >= rect.x1 and sprite_rect.x1 <= rect.x2:
+                    sprite.draw()
+
+            # Overlay tiles
             ti = ty * self.cols + tx1
             for tx in range(tx1, tx2):
                 tile = self.tiles[ti]
                 r = tile.rect
-                for layer in self.layers:
+                for layer in self.layers[sprite_layer_index:]:
                     image = layer.images[ti]
                     if image:
-                        bacon.draw_image(image, r.x1, r.y1, r.x2, r.y2)
+                        bacon.draw_image(image, r.x1, r.y1 + layer.offset_y, r.x2, r.y2 + layer.offset_y)
                 ti += 1
 
     def get_path(self, start_tile, arrived_func, heuristic_func):
