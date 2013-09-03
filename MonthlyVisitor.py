@@ -164,6 +164,7 @@ class Character(Sprite):
         self.anims = anims
         super(Character, self).__init__(self.get_anim(), x, y)
         self.path = None
+        self.target_item = None
 
     def get_anim(self):
         try:
@@ -175,6 +176,7 @@ class Character(Sprite):
         self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func)
 
     def walk_to_tile(self, tile):
+        self.target_item = None
         self.walk(path_arrived(tile), path_heuristic_player(tile))
 
     def update_player_movement(self):
@@ -193,6 +195,7 @@ class Character(Sprite):
             self.update_facing(dx, dy)
             self.move_with_collision(tilemap, dx, dy, self.walk_speed)
             self.path = None
+            self.target_item = None
             self.action = 'walk'
         elif not self.path:
             self.action = 'idle'
@@ -210,8 +213,10 @@ class Character(Sprite):
             del self.path[0]
             if not self.path:
                 self.action = 'idle'
-                if target_tile.items:
-                    inventory.pick_up(target_tile)
+                if self.target_item:
+                    target_item = self.target_item
+                    self.target_item = None
+                    target_item.on_player_interact(target_tile)
         else:
             self.move_with_collision(tilemap, dx, dy, self.walk_speed)
             self.action = 'walk'
@@ -274,6 +279,7 @@ def spawn_item_on_tile(tile, class_name, anim_name=None):
     
 class Item(Sprite):
     walkable = True
+    can_pick_up = True
     anim_name = None
     name = None
 
@@ -294,18 +300,23 @@ class Item(Sprite):
             return cls.name
         return cls.__name__
 
-    def on_pick_up(self, tile):
-        tile.remove_item(self)
+    def on_player_interact(self, tile):
+        if self.can_pick_up:
+            inventory.pick_up(self, tile)
+        else:
+            show_craft_menu(self)
+
+    def on_pick_up(self):
         tilemap.remove_sprite(self)
 
-    def on_drop(self, tile):
-        tile.add_item(self)
+    def on_dropped(self):
         tilemap.add_sprite(self)
 
 @spawn
 class Tree(Item):
     name = 'Tree'
     walkable = False
+    can_pick_up = False
     anim_name = 'Tree1.png'
 
 @spawn
@@ -347,15 +358,17 @@ class Axe(Item):
 
 @spawn
 class Fire(Item):
-    pass
+    walkable = False
+    can_pick_up = False
 
 @spawn
 class Fence(Item):
-    pass
+    walkable = False
 
 @spawn
 class StrongFence(Item):
     name = 'Strong Fence'
+    walkable = False
 
 @spawn
 class Grass(Item):
@@ -551,6 +564,7 @@ class Menu(object):
         for item in self.items:
             item.rect.y1 -= height
             item.rect.y2 -= height
+            item.rect.x1 = self.x
             item.rect.x2 = item.rect.x1 + width
             item.glyph_layout.x = item.rect.x1
             item.glyph_layout.y = item.rect.y1
@@ -589,6 +603,27 @@ class CraftAction(object):
     def __call__(self):
         inventory.craft(self.recipe, self.item)
 
+def show_craft_menu(item):
+    game.menu = Menu(item.x - 16, item.y - 32)
+
+    for recipe in recipes:
+        if recipe.is_input(item):
+            text = recipe.text
+            hint = MenuRecipeHint(recipe)
+            if not text:
+                text = 'Craft %s' % recipe.name
+            if recipe.is_available():
+                game.menu.add(text, CraftAction(recipe, item), hint=hint)
+            else:
+                game.menu.add(text, disabled=True, hint=hint)
+
+    if item in inventory.items:
+        tile = player.get_drop_tile()
+        if tile:
+            game.menu.add('Drop %s' % item.get_name(), DropAction(item))
+        else:
+            game.menu.add('Drop %s' % item.get_name(), disabled=True)
+
 class Inventory(object):
     def __init__(self):
         self.items = []
@@ -610,10 +645,10 @@ class Inventory(object):
             if item.rect.contains(x, y):
                 return item
 
-    def pick_up(self, tile):
-        item = tile.items[-1]
+    def pick_up(self, item, tile):
         self.add_item(item)
-        item.on_pick_up(tile)
+        tile.remove_item(item)
+        item.on_pick_up()
         
     def add_item(self, item):
         self.items.append(item)
@@ -621,7 +656,8 @@ class Inventory(object):
 
     def drop(self, item, tile):
         self.items.remove(item)
-        item.on_drop(tile)
+        tile.add_item(item)
+        item.on_dropped()
         
     def craft(self, recipe, initial_item):
         slot_index = self.items.index(initial_item)
@@ -649,24 +685,7 @@ class Inventory(object):
         if pressed and button == bacon.MouseButtons.left:
             item = self.get_item_at(bacon.mouse.x, bacon.mouse.y)
             if item:
-                game.menu = Menu(item.x - 16, item.y - 32)
-
-                for recipe in recipes:
-                    if recipe.is_input(item):
-                        text = recipe.text
-                        hint = MenuRecipeHint(recipe)
-                        if not text:
-                            text = 'Craft %s' % recipe.name
-                        if recipe.is_available():
-                            game.menu.add(text, CraftAction(recipe, item), hint=hint)
-                        else:
-                            game.menu.add(text, disabled=True, hint=hint)
-
-                tile = player.get_drop_tile()
-                if tile:
-                    game.menu.add('Drop %s' % item.get_name(), DropAction(item))
-                else:
-                    game.menu.add('Drop %s' % item.get_name(), disabled=True)
+                show_craft_menu(item)
                 return True
         return False
 
@@ -789,8 +808,10 @@ class Game(bacon.Game):
                 x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
                 ti = tilemap.get_tile_index(x, y)
                 tile = tilemap.tiles[ti]
-                if tile.can_target and (tile.items or tile.walkable):
+                if tile.can_target and tile.walkable:
                     player.walk_to_tile(tile)
+                    if tile.items:
+                        player.target_item = tile.items[-1]
 
 game = Game()
 bacon.run(game)
