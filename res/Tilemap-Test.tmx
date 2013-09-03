@@ -354,7 +354,6 @@
   <image source="Tileset-ObjectSpawns.png" width="256" height="256"/>
   <tile id="0">
    <properties>
-    <property name="Anim" value="Tree1.png"/>
     <property name="Class" value="Tree"/>
    </properties>
   </tile>
@@ -442,6 +441,11 @@
   <tile id="19">
    <properties>
     <property name="Class" value="Coal"/>
+   </properties>
+  </tile>
+  <tile id="20">
+   <properties>
+    <property name="Anim" value="TreeStump"/>
    </properties>
   </tile>
   <tile id="22">

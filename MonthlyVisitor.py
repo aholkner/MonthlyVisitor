@@ -290,6 +290,7 @@ def spawn_item_on_tile(tile, class_name, anim_name=None):
 class Item(Sprite):
     walkable = True
     can_pick_up = True
+    is_consumed_in_recipe = True
     anim_name = None
     name = None
 
@@ -324,17 +325,21 @@ class Item(Sprite):
     def on_dropped(self):
         tilemap.add_sprite(self)
 
+    def on_consumed_in_recipe(self):
+        pass
+
 @spawn
 class Tree(Item):
-    name = 'Tree'
     walkable = False
     can_pick_up = False
     anim_name = 'Tree1.png'
 
+    def on_consumed_in_recipe(self):
+        self.anim = object_anims['TreeStump']
+
 @spawn
 class Wood(Item):
     name = 'Wood'
-    anim_name ='Item-Wood.png'
 
 @spawn
 class Rock(Item):
@@ -362,11 +367,11 @@ class Vegetable(Item):
 
 @spawn
 class Pick(Item):
-    pass
+    is_consumed_in_recipe = False
 
 @spawn
 class Axe(Item):
-    pass
+    is_consumed_in_recipe = False
 
 @spawn
 class Fire(Item):
@@ -478,6 +483,7 @@ class Recipe(object):
         return True
 
 recipes = [
+    Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood'),
     Recipe(Axe, {Stick: 1, Rock: 1}),
     Recipe(Pick, {Stick: 1, Iron: 1}),
     #Recipe(Cage, {}),
@@ -730,13 +736,17 @@ class Inventory(object):
         for item_class, count in recipe.inputs.items():
             for i in range(count):
                 if initial_item and initial_item.__class__ is item_class:
-                    if initial_item in self.items:
-                        self.items.remove(initial_item)
+                    if initial_item.is_consumed_in_recipe:
+                        if initial_item in self.items:
+                            self.items.remove(initial_item)
+                        initial_item.on_consumed_in_recipe()
                     initial_item = None
                 else:
                     for item in self.items:
                         if item.__class__ is item_class:
-                            self.items.remove(item)
+                            if item.is_consumed_in_recipe:
+                                self.items.remove(item)
+                                item.on_consumed_in_recipe()
                             break
         self.layout()
 
@@ -768,6 +778,8 @@ for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
             props = image.properties
+            if 'Anim' in props:
+                object_anims[props['Anim']] = Anim([Frame(image, 16, 16)])
             if 'Class' in props:
                 object_anims[props['Class'] + '-Inventory'] = Anim([Frame(image, 16, 16)])
                 _spawn_classes[props['Class']].inventory_image = image
