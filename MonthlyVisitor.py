@@ -1,5 +1,6 @@
 from math import floor, sqrt
 import os
+import itertools
 # For profiling: import sys; sys.path.insert(0, '../bacon')
 
 import bacon
@@ -64,6 +65,11 @@ def lpc_anims(image):
         idle_right = make_anim(right[:1]),
         walk_right = make_anim(right[1:])
     )
+
+def spritesheet_anim(image, cols, rows, pivot_x, pivot_y):
+    sheet = SpriteSheet(image, cols, rows)
+    images = itertools.chain(*sheet.cells)
+    return Anim([Frame(image, pivot_x, pivot_y) for image in images])
 
 class Frame(object):
     def __init__(self, image, pivot_x, pivot_y):
@@ -250,13 +256,9 @@ def spawn_item_on_tile(tile, class_name, anim_name=None):
         print('Missing spawn class %s' % class_name)
         return
 
-    if anim_name is None:
-        try:
-            anim = object_anims[anim_name]
-        except KeyError:
-            print('Missing anim %s for class %s' % (anim_name, class_name))
-            return
-    else:
+    try:
+        anim = object_anims[anim_name]
+    except KeyError:
         anim = cls.get_default_anim()
         if not anim:
             return
@@ -272,14 +274,24 @@ def spawn_item_on_tile(tile, class_name, anim_name=None):
 class Item(Sprite):
     walkable = True
     anim_name = None
+    name = None
 
     @classmethod
     def get_default_anim(cls):
+        if not cls.anim_name:
+            cls.anim_name = cls.__name__
+
         try:
             return object_anims[cls.anim_name]
         except KeyError:
-            print('Missing anim %s for class %s' % (anim_name, cls.__name__))
-            return None
+            anim = object_anims[cls.anim_name] = Anim([Frame(cls.inventory_image, 16, 16)])
+            return anim
+
+    @classmethod
+    def get_name(cls):
+        if cls.name:
+            return cls.name
+        return cls.__name__
 
     def on_pick_up(self, tile):
         tile.remove_item(self)
@@ -301,20 +313,90 @@ class Wood(Item):
     anim_name ='Item-Wood.png'
 
 @spawn
+class Rock(Item):
+    pass
+
+@spawn
+class Coal(Item):
+    pass
+
+@spawn
+class Bone(Item):
+    pass
+
+@spawn
+class RawMeat(Item):
+    name = 'Raw Meat'
+
+@spawn
+class CookedMeat(Item):
+    name = 'Cooked Meat'
+
+@spawn
+class Vegetable(Item):
+    pass
+
+@spawn
+class Pick(Item):
+    pass
+
+@spawn
+class Axe(Item):
+    pass
+
+@spawn
+class Fire(Item):
+    pass
+
+@spawn
 class Fence(Item):
-    name = 'Fence'
-    anim_name = 'Tree1.png'
+    pass
+
+@spawn
+class StrongFence(Item):
+    name = 'Strong Fence'
+
+@spawn
+class Grass(Item):
+    pass
+
+@spawn
+class Bread(Item):
+    pass
+
+@spawn
+class Stick(Item):
+    pass
+
+@spawn
+class Iron(Item):
+    pass
+
+@spawn
+class Steel(Item):
+    pass
+
+@spawn
+class Chicken(Item):
+    pass
+
+@spawn
+class Rabbit(Item):
+    pass
+
+
 
 class Recipe(object):
     '''
     :param output: class to generate
     :param inputs: dict of class to count
     '''
-    def __init__(self, output, inputs):
+    def __init__(self, output, inputs, text=None):
         self.output = output
         self.inputs = inputs
+        self.text = text
         self.name = output.__name__
-
+          
     def is_input(self, input):
         return input.__class__ in self.inputs
 
@@ -325,7 +407,21 @@ class Recipe(object):
         return True
 
 recipes = [
-    Recipe(Fence, {Wood: 3})
+    Recipe(Axe, {Stick: 1, Rock: 1}),
+    Recipe(Pick, {Stick: 1, Iron: 1}),
+    #Recipe(Cage, {}),
+    Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
+    Recipe(Fire, {Wood: 2, Coal: 1}),
+    Recipe(Fence, {Wood: 2}),
+    Recipe(StrongFence, {Fence: 1, Wood: 2}),
+    Recipe(RawMeat, {Chicken: 1}, 'Kill for meat'),
+    Recipe(RawMeat, {Rabbit: 1}, 'Kill for meat'),
+    Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
+    #Recipe(RabbitSnare)
+    #Recipe(String
+    #Recipe(Grass Suit
+    #Recipe(FishingRod)
+
 ]
 
 def path_arrived(destination):
@@ -488,10 +584,8 @@ class Inventory(object):
 
     def draw(self):
         bacon.set_color(1, 1, 1, 1)
-        x = 0
         for item in self.items:
-            item.draw()
-            x += 32
+            bacon.draw_image(item.inventory_image, item.x - 16, item.y - 16, item.x + 16, item.y + 16)
 
     def on_mouse_button(self, button, pressed):
         if pressed and button == bacon.MouseButtons.left:
@@ -501,13 +595,16 @@ class Inventory(object):
 
                 for recipe in recipes:
                     if recipe.is_input(item):
+                        text = recipe.text
+                        if not text:
+                            text = 'Craft %s' % recipe.name
                         if recipe.is_available():
-                            game.menu.add('Craft %s' % recipe.name, lambda: self.craft(recipe, item))
+                            game.menu.add(text, (lambda recipe: lambda: self.craft(recipe, item))(recipe))
                         else:
-                            game.menu.add('Craft %s (requires %s)' % (recipe.name, recipe))
+                            game.menu.add('%s (requires %s)' % (text, recipe))
 
                 tile = player.get_drop_tile()
-                game.menu.add('Drop %s' % item.name, lambda: self.drop(item, tile))
+                game.menu.add('Drop %s' % item.get_name(), lambda: self.drop(item, tile))
                 return True
         return False
 
@@ -519,8 +616,17 @@ for folder in object_sprite_data.folders:
         frame = Frame(image, file.pivot_x, file.pivot_y)
         anim = Anim([frame])
         object_anims[file.name] = anim
+object_anims['Item-Fire'] = spritesheet_anim('Item-Fire.png', 1, 4, 16, 16)
 
 tilemap = tiled.parse('res/Tilemap-Test.tmx')
+for tileset in tilemap.tilesets:
+    for image in tileset.images:
+        if hasattr(image, 'properties'):
+            props = image.properties
+            if 'Class' in props:
+                object_anims[props['Class'] + '-Inventory'] = Anim([Frame(image, 16, 16)])
+                _spawn_classes[props['Class']].inventory_image = image
+
 for layer in tilemap.layers:
     if layer.name == 'Spawns':
         tilemap.layers.remove(layer)

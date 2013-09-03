@@ -122,15 +122,15 @@ def parse(tmx_file):
     tile_height = int(elem.get('tileheight'))
 
     tm = tilemap.Tilemap(tile_width, tile_height, cols, rows)
-    tilesets = []
+    tm.tilesets = []
     layers = []
     object_layers = []
 
     for child in elem:
         if child.tag == 'tileset':
-            tilesets.append(parse_tileset(child, base_dir))
+            tm.tilesets.append(parse_tileset(child, base_dir))
         elif child.tag == 'layer':
-            parse_layer(tm, child, tilesets)
+            parse_layer(tm, child, tm.tilesets)
         elif child.tag == 'objectgroup':
             parse_object_group(tm, child)
         
