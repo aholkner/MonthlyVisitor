@@ -466,11 +466,38 @@ class Camera(object):
         return Rect(self.x - GAME_WIDTH / 2, self.y - GAME_HEIGHT / 2, self.x + GAME_WIDTH /2 , self.y + GAME_HEIGHT / 2)
 
 
+class MenuRecipeHint(object):
+    def __init__(self, recipe):
+        self.x = 0
+        self.y = 0
+        self.lines = []
+        style = bacon.Style(font_ui)
+        for (cls, count) in recipe.inputs.items():
+            satisfied = inventory.get_class_count(cls) >= count
+            text = '[%s] %dx %s' % ('X' if satisfied else ' ', count, cls.get_name())
+            run = bacon.GlyphRun(style, text)
+            self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
+        self.height = sum(line.content_height for line in self.lines)
+        self.width = max(line.content_width for line in self.lines)
+
+    def draw(self):
+        x = self.x
+        y = self.y
+        bacon.set_color(0.2, 0.2, 0.2, 1.0)
+        bacon.fill_rect(x, y, x + self.width, y - self.height)
+        bacon.set_color(1, 1, 1, 1)
+        for line in self.lines:
+            line.x = x
+            line.y = y
+            bacon.draw_glyph_layout(line)
+            y -= line.content_height
 
 class MenuItem(object):
-    def __init__(self, text, x, y, func):
+    def __init__(self, text, x, y, func, disabled=False, hint=None):
         self.text = text
         self.func = func
+        self.disabled = disabled
+        self.hint = hint
         style = bacon.Style(font_ui)
         width = 250
         self.glyph_layout = bacon.GlyphLayout([bacon.GlyphRun(style, text)], 
@@ -482,13 +509,25 @@ class MenuItem(object):
 
     def draw(self):
         if self.rect.contains(bacon.mouse.x, bacon.mouse.y):
+            self.draw_hint()
             bacon.set_color(0.6, 0.6, 0.6, 1.0)
         else:
             bacon.set_color(0.3, 0.3, 0.3, 1.0)
         self.rect.fill()
 
-        bacon.set_color(1.0, 1.0, 1.0, 1.0)
+        if self.disabled:
+            bacon.set_color(0.7, 0.7, 0.7, 1.0)
+        else:
+            bacon.set_color(1.0, 1.0, 1.0, 1.0)
         bacon.draw_glyph_layout(self.glyph_layout)
+        
+    def draw_hint(self):
+        if self.hint:
+            self.hint.x = self.rect.x2
+            self.hint.y = self.rect.y2
+            self.hint.draw()
+
+        
 
 class Menu(object):
     def __init__(self, x, y):
@@ -498,8 +537,8 @@ class Menu(object):
         self.items = []
         self.rect = None
 
-    def add(self, text, func=None):
-        item = MenuItem(text, 0, self.item_y, func)
+    def add(self, text, func=None, disabled=False, hint=None):
+        item = MenuItem(text, 0, self.item_y, func, disabled=disabled, hint=hint)
         self.items.append(item)
         self.item_y = item.rect.y2
         self.rect = None
@@ -535,6 +574,21 @@ class Menu(object):
         for item in self.items:
             item.draw()
             
+class DropAction(object):
+    def __init__(self, item):
+        self.item = item
+
+    def __call__(self):
+        inventory.drop(self.item, player.get_drop_tile())
+
+class CraftAction(object):
+    def __init__(self, recipe, item):
+        self.recipe = recipe
+        self.item = item
+
+    def __call__(self):
+        inventory.craft(self.recipe, self.item)
+
 class Inventory(object):
     def __init__(self):
         self.items = []
@@ -600,15 +654,19 @@ class Inventory(object):
                 for recipe in recipes:
                     if recipe.is_input(item):
                         text = recipe.text
+                        hint = MenuRecipeHint(recipe)
                         if not text:
                             text = 'Craft %s' % recipe.name
                         if recipe.is_available():
-                            game.menu.add(text, (lambda recipe: lambda: self.craft(recipe, item))(recipe))
+                            game.menu.add(text, CraftAction(recipe, item), hint=hint)
                         else:
-                            game.menu.add('%s (requires %s)' % (text, recipe))
+                            game.menu.add(text, disabled=True, hint=hint)
 
                 tile = player.get_drop_tile()
-                game.menu.add('Drop %s' % item.get_name(), lambda: self.drop(item, tile))
+                if tile:
+                    game.menu.add('Drop %s' % item.get_name(), DropAction(item))
+                else:
+                    game.menu.add('Drop %s' % item.get_name(), disabled=True)
                 return True
         return False
 
