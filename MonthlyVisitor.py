@@ -1,5 +1,6 @@
 from math import floor, sqrt
 import os
+import sys
 import collections
 import itertools
 # For profiling: import sys; sys.path.insert(0, '../bacon')
@@ -11,6 +12,14 @@ from common import Rect
 
 GAME_WIDTH = 800
 GAME_HEIGHT = 500
+
+# See Game.on_key for cheats
+ENABLE_CHEATS = True
+try:
+    if sys.frozen:
+        ENABLE_CHEATS = False
+except AttributeError:
+    pass
 
 bacon.window.title = 'Monthly Visitor'
 bacon.window.width = GAME_WIDTH
@@ -164,16 +173,21 @@ class Character(Sprite):
     max_item_interact_distance = 48
     facing = 'down'
     action = 'idle'
+    cooldown = 0
 
     is_wolf = False
     motive_food = 1.0
     motive_food_trigger = 0.5
+    
 
     def __init__(self, anims, x, y):
         self.anims = anims
         super(Character, self).__init__(self.get_anim(), x, y)
         self.path = None
         self.target_item = None
+
+    def wait(self, time):
+        self.cooldown = max(self.cooldown, time)
 
     def get_anim(self):
         try:
@@ -253,11 +267,21 @@ class Character(Sprite):
     def update_wolf_motives(self):
         self.motive_food = max(self.motive_food - bacon.timestep * 0.05, 0)
 
+        if self.cooldown > 0:
+            self.cooldown -= bacon.timestep
+            return
+
+        # If we're standing on food, eat it
+        tile = tilemap.get_tile_at(self.x, self.y)
+        for item in tile.items:
+            if item.food_wolf:
+                ConsumeAction(item)()
+
         if self.motive_food < self.motive_food_trigger:
             if not self.path:
                 # Search for nearby food -- note that the returned path is not optimal, but
                 # looks more organic anyway
-                self.walk(path_arrived_food(), path_hueristic_search())
+                self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search())
 
     def get_drop_tile(self):
         return tilemap.get_tile_at(self.x, self.y)
@@ -298,6 +322,7 @@ class Item(Sprite):
     name = None
     food_human = 0
     food_wolf = 0
+    path_cost_wolf = 0
 
     @classmethod
     def get_default_anim(cls):
@@ -338,16 +363,24 @@ class Item(Sprite):
             player.add_food_motive(self.food_human)
         elif self.food_wolf and player.is_wolf:
             player.add_food_motive(self.food_wolf)
+            player.wait(0.5)
 
 @spawn
 class Tree(Item):
     walkable = False
     can_pick_up = False
     anim_name = 'Tree1.png'
+    path_cost_wolf = 99999
 
     def on_consumed_in_recipe(self):
         self.anim = object_anims['TreeStump']
+        self.__class__ = TreeStump
 
+@spawn
+class TreeStump(Item):
+    name = 'Tree Stump'
+    can_pick_up = False
+    
 @spawn
 class Wood(Item):
     name = 'Wood'
@@ -394,6 +427,7 @@ class Fire(Item):
 @spawn
 class Fence(Item):
     walkable = False
+    path_cost_wolf = 10
     fence_anims = {}
 
     def on_pick_up(self):
@@ -439,6 +473,7 @@ class Fence(Item):
 @spawn
 class StrongFence(Fence):
     name = 'Strong Fence'
+    path_cost_wolf = 10
     fence_anims = {}
 
 @spawn
@@ -526,15 +561,19 @@ def path_heuristic_player(destination):
         return abs(destination.tx - tile.tx) + abs(destination.ty - tile.ty) + tile.path_cost
     return func
 
-def path_arrived_food():
+def path_arrived_wolf_food():
     def func(tile):
-        return tile.items
+        for item in tile.items:
+            if item.food_wolf:
+                return True
     return func
 
-def path_hueristic_search():
+def path_hueristic_wolf_search():
     def func(tile):
-        if not tile.walkable:
+        if not tile._walkable:
             return 99999
+        if tile.items: 
+            return max(item.path_cost_wolf for item in tile.items)
         return tile.path_cost
     return func
 
@@ -704,6 +743,10 @@ class ConsumeAction(object):
     def __call__(self):
         if self.item in inventory.items:
             inventory.remove(self.item)
+        else:
+            tile = tilemap.get_tile_at(self.item.x, self.item.y)
+            tile.remove_item(self.item)
+            tilemap.remove_sprite(self.item)
         self.item.on_consumed()
 
 def show_craft_menu(item, x, y):
@@ -733,6 +776,9 @@ def show_craft_menu(item, x, y):
             game.menu.add('Drop %s' % item.get_name(), DropAction(item))
         else:
             game.menu.add('Drop %s' % item.get_name(), disabled=True)
+
+    if not game.menu.items:
+        game.menu = None
 
 class Inventory(object):
     def __init__(self):
@@ -924,8 +970,13 @@ class Game(bacon.Game):
             self.menu.draw()
 
     def on_key(self, key, pressed):
-        if pressed and key == bacon.Keys.w:
-            player.is_wolf = not player.is_wolf
+        if ENABLE_CHEATS:
+            if pressed and key == bacon.Keys.w:
+                player.is_wolf = not player.is_wolf
+            if pressed and key == bacon.Keys.minus:
+                player.motive_food -= 0.2
+            if pressed and key == bacon.Keys.plus:
+                player.motive_food += 0.2
 
     def on_mouse_button(self, button, pressed):
         if self.menu:

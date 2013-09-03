@@ -35,7 +35,10 @@ class Tile(object):
         item.y = self.rect.center_y
 
     def remove_item(self, item):
-        self.items.remove(item)
+        try:
+            self.items.remove(item)
+        except ValueError:
+            pass
 
 class TilemapObject(object):
     def __init__(self, name, x, y):
