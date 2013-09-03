@@ -295,13 +295,14 @@ class Item(Sprite):
 
     @classmethod
     def get_default_anim(cls):
+        anim_name = cls.anim_name
         if not cls.anim_name:
-            cls.anim_name = cls.__name__
+            anim_name = cls.__name__
 
         try:
-            return object_anims[cls.anim_name]
+            return object_anims[anim_name]
         except KeyError:
-            anim = object_anims[cls.anim_name] = Anim([Frame(cls.inventory_image, 16, 16)])
+            anim = object_anims[anim_name] = Anim([Frame(cls.inventory_image, 16, 16)])
             return anim
 
     @classmethod
@@ -773,7 +774,11 @@ for tileset in tilemap.tilesets:
             if 'Fence' in props:
                 fmt = props['Fence']
                 Fence.fence_anims[fmt] = Anim([Frame(image, 16, 16)])
+            if 'StrongFence' in props:
+                fmt = props['StrongFence']
+                StrongFence.fence_anims[fmt] = Anim([Frame(image, 16, 16)])
 Fence.fence_anims[''] = Fence.get_default_anim()
+StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 
 for layer in tilemap.layers:
     if layer.name == 'Spawns':
