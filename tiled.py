@@ -27,14 +27,30 @@ def parse_tileset_images(elem, base_dir):
 
     return images
 
+def parse_tile(image, elem):
+    for child in elem:
+        if child.tag == 'properties':
+            for prop in child:
+                if prop.tag == 'property':
+                    name = prop.get('name')
+                    value = prop.get('value')
+                    if not hasattr(image, 'properties'):
+                        image.properties = {}
+                    image.properties[name] = value
+
 def parse_tileset(elem, base_dir):
     firstgid = int(elem.get('firstgid'))
     source = elem.get('source')
     if source:
         tree = ET.parse(os.path.join(base_dir, source))
-        images = parse_tileset_images(tree.getroot(), base_dir)
-    else:
-        images = parse_tileset_images(elem, base_dir)
+        elem = tree.getroot()
+    
+    images = parse_tileset_images(elem, base_dir)
+    for child in elem:
+        if child.tag == 'tile':
+            id = int(child.get('id'))
+            parse_tile(images[id], child)
+
     return Tileset(firstgid, images)
 
 def parse_layer(tm, elem, tilesets):

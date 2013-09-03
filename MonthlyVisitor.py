@@ -324,6 +324,15 @@ class Inventory(object):
                 return True
         return False
 
+def spawn_item(tile, spawn_type):
+    anim = object_anims[spawn_type]
+    item = Item(anim, tile.rect.center_x, tile.rect.center_y)
+    tile.items.append(item)
+    tilemap.add_sprite(item)
+
+    # TODO based on item type
+    tile.walkable = False
+
 object_anims = {}
 object_sprite_data = spriter.parse('res/Objects.scml')
 for folder in object_sprite_data.folders:
@@ -334,12 +343,13 @@ for folder in object_sprite_data.folders:
         object_anims[os.path.splitext(file.name)[0]] = anim
 
 tilemap = tiled.parse('res/Tilemap.tmx')
-for layer in tilemap.object_layers:
-    if layer.name == 'Spawn_Tree':
-        anim = object_anims['Tree1']
-        for obj in layer.objects:
-            sprite = Sprite(anim, obj.x, obj.y)
-            tilemap.add_sprite(sprite)
+for layer in tilemap.layers:
+    if layer.name == 'Spawns':
+        tilemap.layers.remove(layer)
+        for i, image in enumerate(layer.images):
+            if image:
+                tile = tilemap.tiles[i]
+                spawn_item(tile, image.properties['Spawn'])
 
 camera = Camera()
 
@@ -347,10 +357,6 @@ player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
 tilemap.add_sprite(player)
 inventory = Inventory()
-
-
-scenery = [
-]
 
 for object_layer in tilemap.object_layers:
     for object in object_layer.objects:
@@ -392,15 +398,6 @@ class Game(bacon.Game):
                 elif tile.path_closed:
                     bacon.set_color(1, 1, 0, 1)
                     tile.rect.fill()
-        bacon.set_color(1, 1, 1, 1)
-
-        
-        for prop in scenery:
-            prop.draw()
-            tilemap.get_tile_rect(prop.x, prop.y).draw()
-        for tile in tilemap.tiles:
-            for item in tile.items:
-                item.draw()
         
         bacon.set_color(0, 0, 1, 1)
         tilemap.get_tile_rect(player.x, player.y).draw()
