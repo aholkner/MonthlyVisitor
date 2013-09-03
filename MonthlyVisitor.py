@@ -293,6 +293,8 @@ class Item(Sprite):
     is_consumed_in_recipe = True
     anim_name = None
     name = None
+    food_human = 0
+    food_wolf = 0
 
     @classmethod
     def get_default_anim(cls):
@@ -328,6 +330,12 @@ class Item(Sprite):
     def on_consumed_in_recipe(self):
         pass
 
+    def on_consumed(self):
+        if self.food_human and not player.is_wolf:
+            player.motive_food += self.food_human
+        elif self.food_wolf and player.is_wolf:
+            player.motive_food += self.food_wolf
+
 @spawn
 class Tree(Item):
     walkable = False
@@ -356,14 +364,16 @@ class Bone(Item):
 @spawn
 class RawMeat(Item):
     name = 'Raw Meat'
+    food_wolf = 0.2
 
 @spawn
 class CookedMeat(Item):
     name = 'Cooked Meat'
+    food_human = 0.3
 
 @spawn
 class Vegetable(Item):
-    pass
+    food_human = 0.05
 
 @spawn
 class Pick(Item):
@@ -434,7 +444,7 @@ class Grass(Item):
 
 @spawn
 class Bread(Item):
-    pass
+    food_human = 0.2
 
 @spawn
 class Stick(Item):
@@ -450,11 +460,11 @@ class Steel(Item):
 
 @spawn
 class Chicken(Item):
-    pass
+    food_wolf = 0.3
 
 @spawn
 class Rabbit(Item):
-    pass
+    food_wolf = 0.3
 
 
 
@@ -542,18 +552,11 @@ class Camera(object):
     def get_bounds(self):
         return Rect(self.x - GAME_WIDTH / 2, self.y - GAME_HEIGHT / 2, self.x + GAME_WIDTH /2 , self.y + GAME_HEIGHT / 2)
 
-
-class MenuRecipeHint(object):
-    def __init__(self, recipe):
-        self.x = 0
-        self.y = 0
+class MenuHint(object):
+    def __init__(self):
         self.lines = []
-        style = bacon.Style(font_ui)
-        for (cls, count) in recipe.inputs.items():
-            satisfied = inventory.get_class_count(cls) >= count
-            text = '[%s] %dx %s' % ('X' if satisfied else ' ', count, cls.get_name())
-            run = bacon.GlyphRun(style, text)
-            self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
+
+    def layout(self):
         self.height = sum(line.content_height for line in self.lines)
         self.width = max(line.content_width for line in self.lines)
 
@@ -568,6 +571,30 @@ class MenuRecipeHint(object):
             line.y = y
             bacon.draw_glyph_layout(line)
             y -= line.content_height
+
+class MenuRecipeHint(MenuHint):
+    def __init__(self, recipe):
+        self.x = 0
+        self.y = 0
+        self.lines = []
+        style = bacon.Style(font_ui)
+        for (cls, count) in recipe.inputs.items():
+            satisfied = inventory.get_class_count(cls) >= count
+            text = '[%s] %dx %s' % ('X' if satisfied else ' ', count, cls.get_name())
+            run = bacon.GlyphRun(style, text)
+            self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
+        self.layout()
+
+
+class MenuTextHint(MenuHint):
+    def __init__(self, text):
+        self.x = 0
+        self.y = 0
+        self.lines = []
+        style = bacon.Style(font_ui)
+        run = bacon.GlyphRun(style, text)
+        self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
+        self.layout()
 
 class MenuItem(object):
     def __init__(self, text, x, y, func, disabled=False, hint=None):
@@ -667,6 +694,15 @@ class CraftAction(object):
     def __call__(self):
         inventory.craft(self.recipe, self.item)
 
+class ConsumeAction(object):
+    def __init__(self, item):
+        self.item = item
+
+    def __call__(self):
+        if self.item in inventory.items:
+            inventory.remove(self.item)
+        self.item.on_consumed()
+
 def show_craft_menu(item, x, y):
     game.menu = Menu(x - 16, y - 32)
 
@@ -682,6 +718,11 @@ def show_craft_menu(item, x, y):
                 game.menu.add(text, CraftAction(recipe, item), hint=hint)
             else:
                 game.menu.add(text, disabled=True, hint=hint)
+
+    if item.food_human:
+        game.menu.add('Eat %s' % item.get_name(), ConsumeAction(item))
+    elif item.food_wolf:
+        game.menu.add('Eat %s' % item.get_name(), disabled=True, hint=MenuTextHint('Can be eaten during full moon'))
 
     if item in inventory.items:
         tile = player.get_drop_tile()
@@ -724,6 +765,10 @@ class Inventory(object):
         self.items.remove(item)
         tile.add_item(item)
         item.on_dropped()
+
+    def remove(self, item):
+        self.items.remove(item)
+        self.layout()
         
     def craft(self, recipe, initial_item):
         if initial_item in self.items:
