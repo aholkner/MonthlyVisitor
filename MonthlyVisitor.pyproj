@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="common.py" />
     <Compile Include="MonthlyVisitor.py" />
+    <Compile Include="spriter.py" />
     <Compile Include="tiled.py" />
     <Compile Include="tilemap.py" />
     <Content Include="res\player.png" />

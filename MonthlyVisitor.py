@@ -1,8 +1,10 @@
 from math import floor, sqrt
+import os
 # For profiling: import sys; sys.path.insert(0, '../bacon')
 
 import bacon
 import tiled
+import spriter
 from common import Rect
 
 GAME_WIDTH = 800
@@ -322,7 +324,22 @@ class Inventory(object):
                 return True
         return False
 
+object_anims = {}
+object_sprite_data = spriter.parse('res/Objects.scml')
+for folder in object_sprite_data.folders:
+    for file in folder.files:
+        image = load_image(file.name)
+        frame = Frame(image, file.pivot_x, file.pivot_y)
+        anim = Anim([frame])
+        object_anims[os.path.splitext(file.name)[0]] = anim
+
 tilemap = tiled.parse('res/Tilemap.tmx')
+for layer in tilemap.object_layers:
+    if layer.name == 'Spawn_Tree':
+        anim = object_anims['Tree1']
+        for obj in layer.objects:
+            sprite = Sprite(anim, obj.x, obj.y)
+            tilemap.add_sprite(sprite)
 
 camera = Camera()
 
@@ -330,6 +347,7 @@ player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
 tilemap.add_sprite(player)
 inventory = Inventory()
+
 
 scenery = [
 ]
