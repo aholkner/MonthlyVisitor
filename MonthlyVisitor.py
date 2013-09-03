@@ -243,7 +243,7 @@ def spawn(cls):
     _spawn_classes[cls.__name__] = cls
     return cls
 
-def spawn_item(tile, class_name, anim_name=None):
+def spawn_item_on_tile(tile, class_name, anim_name=None):
     try:
         cls = _spawn_classes[class_name]
     except KeyError:
@@ -251,21 +251,35 @@ def spawn_item(tile, class_name, anim_name=None):
         return
 
     if anim_name is None:
-        anim_name = cls.anim_name
+        try:
+            anim = object_anims[anim_name]
+        except KeyError:
+            print('Missing anim %s for class %s' % (anim_name, class_name))
+            return
+    else:
+        anim = cls.get_default_anim()
+        if not anim:
+            return
+
+    if tile:
+        x = tile.rect.center_x
+        y = tile.rect.center_y
+        item = cls(anim, x, y)
+        tile.items.append(item)
+        tilemap.add_sprite(item)
+    return item
     
-    try:
-        anim = object_anims[anim_name]
-    except KeyError:
-        print('Missing anim %s for class %s' % (anim_name, class_name))
-        return
-
-    item = cls(anim, tile.rect.center_x, tile.rect.center_y)
-    tile.items.append(item)
-    tilemap.add_sprite(item)
-
 class Item(Sprite):
     walkable = True
     anim_name = None
+
+    @classmethod
+    def get_default_anim(cls):
+        try:
+            return object_anims[cls.anim_name]
+        except KeyError:
+            print('Missing anim %s for class %s' % (anim_name, cls.__name__))
+            return None
 
     def on_pick_up(self, tile):
         tile.remove_item(self)
@@ -277,12 +291,42 @@ class Item(Sprite):
 
 @spawn
 class Tree(Item):
+    name = 'Tree'
     walkable = False
     anim_name = 'Tree1.png'
 
 @spawn
 class Wood(Item):
+    name = 'Wood'
     anim_name ='Item-Wood.png'
+
+@spawn
+class Fence(Item):
+    name = 'Fence'
+    anim_name = 'Tree1.png'
+
+class Recipe(object):
+    '''
+    :param output: class to generate
+    :param inputs: dict of class to count
+    '''
+    def __init__(self, output, inputs):
+        self.output = output
+        self.inputs = inputs
+        self.name = output.__name__
+
+    def is_input(self, input):
+        return input.__class__ in self.inputs
+
+    def is_available(self):
+        for input, count in self.inputs.items():
+            if inventory.get_class_count(input) < count:
+                return False
+        return True
+
+recipes = [
+    Recipe(Fence, {Wood: 3})
+]
 
 def path_arrived(destination):
     def func(tile):
@@ -322,13 +366,91 @@ class Camera(object):
     def get_bounds(self):
         return Rect(self.x - GAME_WIDTH / 2, self.y - GAME_HEIGHT / 2, self.x + GAME_WIDTH /2 , self.y + GAME_HEIGHT / 2)
 
+
+
+class MenuItem(object):
+    def __init__(self, text, x, y, func):
+        self.text = text
+        self.func = func
+        style = bacon.Style(font_ui)
+        width = 250
+        self.glyph_layout = bacon.GlyphLayout([bacon.GlyphRun(style, text)], 
+                                              x, y, 
+                                              width, style.font.descent - style.font.ascent, 
+                                              align=bacon.Alignment.left,
+                                              vertical_align=bacon.VerticalAlignment.top)
+        self.rect = Rect(x, y, x + self.glyph_layout.content_width, y + self.glyph_layout.content_height)
+
+    def draw(self):
+        if self.rect.contains(bacon.mouse.x, bacon.mouse.y):
+            bacon.set_color(0.6, 0.6, 0.6, 1.0)
+        else:
+            bacon.set_color(0.3, 0.3, 0.3, 1.0)
+        self.rect.fill()
+
+        bacon.set_color(1.0, 1.0, 1.0, 1.0)
+        bacon.draw_glyph_layout(self.glyph_layout)
+
+class Menu(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.item_y = y
+        self.items = []
+        self.rect = None
+
+    def add(self, text, func=None):
+        item = MenuItem(text, 0, self.item_y, func)
+        self.items.append(item)
+        self.item_y = item.rect.y2
+        self.rect = None
+
+    def layout(self):
+        width = max(item.rect.width for item in self.items)
+        height = sum(item.rect.height for item in self.items)
+        self.y -= height
+        self.rect = Rect(self.x, self.y, self.x + width, self.y + height)
+        for item in self.items:
+            item.rect.y1 -= height
+            item.rect.y2 -= height
+            item.rect.x2 = item.rect.x1 + width
+            item.glyph_layout.x = item.rect.x1
+            item.glyph_layout.y = item.rect.y1
+            
+    def on_mouse_button(self, button, pressed):
+        if not self.rect:
+            self.layout()
+        if self.rect.contains(bacon.mouse.x, bacon.mouse.y):
+            for item in self.items:
+                if item.rect.contains(bacon.mouse.x, bacon.mouse.y):
+                    if item.func:
+                        item.func()
+                    game.menu = None
+                    return
+        if pressed:
+            game.menu = None
+
+    def draw(self):
+        if not self.rect:
+            self.layout()
+        for item in self.items:
+            item.draw()
+            
 class Inventory(object):
     def __init__(self):
         self.items = []
-        self.x = 0
+        self.x = 32
         self.y = GAME_HEIGHT - 32
         self.item_size_x = 32
         self.item_size_y = 32
+
+    def layout(self):
+        for (i, item) in enumerate(self.items):
+            item.x = self.x + i * self.item_size_x
+            item.y = self.y
+
+    def get_class_count(self, input_class):
+        return len([i for i in self.items if i.__class__ is input_class])
 
     def get_item_at(self, x, y):
         for item in self.items:
@@ -337,15 +459,33 @@ class Inventory(object):
 
     def pick_up(self, tile):
         item = tile.items[-1]
-        self.items.append(item)
-        item.x = self.x + len(self.items) * self.item_size_x
-        item.y = self.y
+        self.add_item(item)
         item.on_pick_up(tile)
         
+    def add_item(self, item):
+        self.items.append(item)
+        self.layout()
+
     def drop(self, item, tile):
         self.items.remove(item)
         item.on_drop(tile)
         
+    def craft(self, recipe, initial_item):
+        slot_index = self.items.index(initial_item)
+        crafted_item = recipe.output(recipe.output.get_default_anim(), 0, 0)
+        self.items.insert(slot_index, crafted_item)
+        for item_class, count in recipe.inputs.items():
+            for i in range(count):
+                if initial_item and initial_item.__class__ is item_class:
+                    self.items.remove(initial_item)
+                    initial_item = None
+                else:
+                    for item in self.items:
+                        if item.__class__ is item_class:
+                            self.items.remove(item)
+                            break
+        self.layout()
+
     def draw(self):
         bacon.set_color(1, 1, 1, 1)
         x = 0
@@ -357,13 +497,19 @@ class Inventory(object):
         if pressed and button == bacon.MouseButtons.left:
             item = self.get_item_at(bacon.mouse.x, bacon.mouse.y)
             if item:
+                game.menu = Menu(item.x - 16, item.y - 32)
+
+                for recipe in recipes:
+                    if recipe.is_input(item):
+                        if recipe.is_available():
+                            game.menu.add('Craft %s' % recipe.name, lambda: self.craft(recipe, item))
+                        else:
+                            game.menu.add('Craft %s (requires %s)' % (recipe.name, recipe))
+
                 tile = player.get_drop_tile()
-                if tile and tile.accept_items:
-                    self.drop(item, tile)
+                game.menu.add('Drop %s' % item.name, lambda: self.drop(item, tile))
                 return True
         return False
-
-
 
 object_anims = {}
 object_sprite_data = spriter.parse('res/Objects.scml')
@@ -383,7 +529,7 @@ for layer in tilemap.layers:
                 tile = tilemap.tiles[i]
                 class_name = image.properties.get('Class')
                 anim_name = image.properties.get('Anim')
-                spawn_item(tile, class_name, anim_name)
+                spawn_item_on_tile(tile, class_name, anim_name)
 
 camera = Camera()
 
@@ -400,6 +546,9 @@ for object_layer in tilemap.object_layers:
             tilemap.update_sprite_position(player)
 
 class Game(bacon.Game):
+    def __init__(self):
+        self.menu = None
+
     def on_tick(self):
         if player.is_wolf:
             player.update_wolf_motives()
@@ -452,11 +601,18 @@ class Game(bacon.Game):
             bacon.set_color(0, 0, 0, 1)
             bacon.draw_string(font_ui, 'WOLF', 0, 32)
 
+        if self.menu:
+            self.menu.draw()
+
     def on_key(self, key, pressed):
         if pressed and key == bacon.Keys.w:
             player.is_wolf = not player.is_wolf
 
     def on_mouse_button(self, button, pressed):
+        if self.menu:
+            self.menu.on_mouse_button(button, pressed)
+            return
+
         if not player.is_wolf:
             if inventory.on_mouse_button(button, pressed):
                 return
@@ -468,4 +624,5 @@ class Game(bacon.Game):
                 if tile.can_target and (tile.items or tile.walkable):
                     player.walk_to_tile(tile)
 
-bacon.run(Game())
+game = Game()
+bacon.run(game)
