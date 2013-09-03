@@ -24,7 +24,7 @@ class Tile(object):
         return (self.tx, self.ty) < (other.tx, other.ty)
 
     def is_walkable(self):
-        return self._walkable and all(lambda item: item.walkable for item in self.items)
+        return self._walkable and all(item.walkable for item in self.items)
     def set_walkable(self, walkable):
         self._walkable = walkable
     walkable = property(is_walkable, set_walkable)

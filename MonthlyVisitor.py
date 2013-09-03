@@ -374,7 +374,7 @@ for folder in object_sprite_data.folders:
         anim = Anim([frame])
         object_anims[file.name] = anim
 
-tilemap = tiled.parse('res/Tilemap.tmx')
+tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for layer in tilemap.layers:
     if layer.name == 'Spawns':
         tilemap.layers.remove(layer)
