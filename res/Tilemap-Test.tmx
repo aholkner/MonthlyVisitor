@@ -187,6 +187,81 @@
   <terraintypes>
    <terrain name="Back Wall" tile="-1"/>
   </terraintypes>
+  <tile id="39">
+   <properties>
+    <property name="Fence" value="R"/>
+   </properties>
+  </tile>
+  <tile id="40">
+   <properties>
+    <property name="Fence" value="LR"/>
+   </properties>
+  </tile>
+  <tile id="41">
+   <properties>
+    <property name="Fence" value="L"/>
+   </properties>
+  </tile>
+  <tile id="55">
+   <properties>
+    <property name="Fence" value="U"/>
+   </properties>
+  </tile>
+  <tile id="56">
+   <properties>
+    <property name="Fence" value="UD"/>
+   </properties>
+  </tile>
+  <tile id="57">
+   <properties>
+    <property name="Fence" value="D"/>
+   </properties>
+  </tile>
+  <tile id="71">
+   <properties>
+    <property name="Fence" value="DR"/>
+   </properties>
+  </tile>
+  <tile id="72">
+   <properties>
+    <property name="Fence" value="DLR"/>
+   </properties>
+  </tile>
+  <tile id="73">
+   <properties>
+    <property name="Fence" value="DL"/>
+   </properties>
+  </tile>
+  <tile id="87">
+   <properties>
+    <property name="Fence" value="UDR"/>
+   </properties>
+  </tile>
+  <tile id="88">
+   <properties>
+    <property name="Fence" value="UDLR"/>
+   </properties>
+  </tile>
+  <tile id="89">
+   <properties>
+    <property name="Fence" value="UDL"/>
+   </properties>
+  </tile>
+  <tile id="103">
+   <properties>
+    <property name="Fence" value="UR"/>
+   </properties>
+  </tile>
+  <tile id="104">
+   <properties>
+    <property name="Fence" value="ULR"/>
+   </properties>
+  </tile>
+  <tile id="105">
+   <properties>
+    <property name="Fence" value="UL"/>
+   </properties>
+  </tile>
   <tile id="128" terrain=",,,0"/>
   <tile id="129" terrain=",,0,0"/>
   <tile id="130" terrain=",,0,"/>
@@ -34361,8 +34436,8 @@
    <tile gid="0"/>
    <tile gid="777"/>
    <tile gid="778"/>
-   <tile gid="779"/>
-   <tile gid="780"/>
+   <tile gid="778"/>
+   <tile gid="778"/>
    <tile gid="781"/>
    <tile gid="782"/>
    <tile gid="783"/>
@@ -34413,7 +34488,7 @@
    <tile gid="786"/>
    <tile gid="787"/>
    <tile gid="788"/>
-   <tile gid="789"/>
+   <tile gid="778"/>
    <tile gid="790"/>
    <tile gid="791"/>
    <tile gid="792"/>
@@ -34464,6 +34539,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
+   <tile gid="778"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -34514,8 +34590,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="778"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>

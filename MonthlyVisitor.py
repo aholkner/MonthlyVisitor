@@ -375,11 +375,52 @@ class Fire(Item):
 @spawn
 class Fence(Item):
     walkable = False
+    fence_anims = {}
+
+    def on_pick_up(self):
+        super(Fence, self).on_pick_up()
+        self.update_fence_and_adjacent()
+
+    def on_dropped(self):
+        super(Fence, self).on_dropped()
+        self.update_fence_and_adjacent()
+
+    def update_fence_and_adjacent(self):
+        adjacent = [
+            tilemap.get_tile_at(self.x - tilemap.tile_width, self.y),
+            tilemap.get_tile_at(self.x + tilemap.tile_width, self.y),
+            tilemap.get_tile_at(self.x, self.y - tilemap.tile_height),
+            tilemap.get_tile_at(self.x, self.y + tilemap.tile_height),
+        ]
+        self.update_fence()
+        for tile in adjacent:
+            for item in tile.items:
+                if isinstance(item, Fence):
+                    item.update_fence()
+
+    def update_fence(self):
+        fmt = ''
+        if self.has_neighbour_fence(self.x, self.y - tilemap.tile_height):
+            fmt += 'U'
+        if self.has_neighbour_fence(self.x, self.y + tilemap.tile_height):
+            fmt += 'D'
+        if self.has_neighbour_fence(self.x - tilemap.tile_width, self.y):
+            fmt += 'L'
+        if self.has_neighbour_fence(self.x + tilemap.tile_width, self.y):
+            fmt += 'R'
+        self.anim = self.fence_anims[fmt]
+
+    def has_neighbour_fence(self, x, y):
+        tile = tilemap.get_tile_at(x, y)
+        for item in tile.items:
+            if isinstance(item, Fence):
+                return True
+        return False
 
 @spawn
-class StrongFence(Item):
+class StrongFence(Fence):
     name = 'Strong Fence'
-    walkable = False
+    fence_anims = {}
 
 @spawn
 class Grass(Item):
@@ -664,9 +705,9 @@ class Inventory(object):
                 return item
 
     def pick_up(self, item, tile):
-        self.add_item(item)
         tile.remove_item(item)
         item.on_pick_up()
+        self.add_item(item)
         
     def add_item(self, item):
         self.items.append(item)
@@ -729,6 +770,10 @@ for tileset in tilemap.tilesets:
             if 'Class' in props:
                 object_anims[props['Class'] + '-Inventory'] = Anim([Frame(image, 16, 16)])
                 _spawn_classes[props['Class']].inventory_image = image
+            if 'Fence' in props:
+                fmt = props['Fence']
+                Fence.fence_anims[fmt] = Anim([Frame(image, 16, 16)])
+Fence.fence_anims[''] = Fence.get_default_anim()
 
 for layer in tilemap.layers:
     if layer.name == 'Spawns':
