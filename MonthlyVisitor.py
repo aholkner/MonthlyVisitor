@@ -112,34 +112,43 @@ class Sprite(object):
     def move_with_collision(self, tilemap, dx, dy, speed):
         # Slice movement into tile-sized blocks for collision testing
         size = sqrt(dx * dx + dy * dy)
+        if not size:
+            return False
+
         dx /= size
         dy /= size
         size = min(size, speed * bacon.timestep)
+        did_move = False
         while size > 0:
             inc = min(size, tilemap.tile_width / 2, tilemap.tile_height / 2)
 
             # Move along X
-            incx = inc * dx
-            tile = tilemap.get_tile_at(self.x + incx, self.y)
-            if tile.walkable:
-                self.x += incx
-            elif dx > 0:
-                self.x = tilemap.get_tile_rect(self.x + incx, self.y).x1 - 1
-            elif dx < 0:
-                self.x = tilemap.get_tile_rect(self.x + incx, self.y).x2 + 1
+            if dx:
+                incx = inc * dx
+                tile = tilemap.get_tile_at(self.x + incx, self.y)
+                if tile.walkable:
+                    self.x += incx
+                    did_move = True
+                elif dx > 0:
+                    self.x = tilemap.get_tile_rect(self.x + incx, self.y).x1 - 1
+                elif dx < 0:
+                    self.x = tilemap.get_tile_rect(self.x + incx, self.y).x2 + 1
 
             # Move along Y
-            incy = inc * dy
-            tile = tilemap.get_tile_at(self.x, self.y + incy)
-            if tile.walkable:
-                self.y += incy
-            elif dy > 0:
-                self.y = tilemap.get_tile_rect(self.x, self.y + incy).y1 - 1
-            elif dy < 0:
-                self.y = tilemap.get_tile_rect(self.x, self.y + incy).y2 + 1
+            if dy:
+                incy = inc * dy
+                tile = tilemap.get_tile_at(self.x, self.y + incy)
+                if tile.walkable:
+                    self.y += incy
+                    did_move = True
+                elif dy > 0:
+                    self.y = tilemap.get_tile_rect(self.x, self.y + incy).y1 - 1
+                elif dy < 0:
+                    self.y = tilemap.get_tile_rect(self.x, self.y + incy).y2 + 1
 
             size -= inc
         tilemap.update_sprite_position(self)
+        return did_move
 
     def draw(self):
         frame = self.frame
@@ -152,7 +161,7 @@ class Sprite(object):
 
 class Character(Sprite):
     walk_speed = 200
-    path_arrive_distance = 2
+    max_item_interact_distance = 48
     facing = 'down'
     action = 'idle'
 
@@ -208,18 +217,19 @@ class Character(Sprite):
         dx = target_tile.rect.center_x - self.x
         dy = target_tile.rect.center_y - self.y
         self.update_facing(dx, dy)
-        distance = sqrt(dx * dx + dy * dy)
-        if distance <= self.path_arrive_distance:
+        if self.move_with_collision(tilemap, dx, dy, self.walk_speed):
+            self.action = 'walk'
+        else:
+            # Didn't move, so we've arrived at this path node
             del self.path[0]
             if not self.path:
                 self.action = 'idle'
                 if self.target_item:
                     target_item = self.target_item
                     self.target_item = None
-                    target_item.on_player_interact(target_tile)
-        else:
-            self.move_with_collision(tilemap, dx, dy, self.walk_speed)
-            self.action = 'walk'
+                    distance = sqrt(dx * dx + dy * dy)
+                    if distance <= self.max_item_interact_distance:
+                        target_item.on_player_interact(target_tile)
 
         self.anim = self.get_anim()
 
@@ -304,7 +314,8 @@ class Item(Sprite):
         if self.can_pick_up:
             inventory.pick_up(self, tile)
         else:
-            show_craft_menu(self)
+            x, y = camera.world_to_view(self.x, self.y)
+            show_craft_menu(self, x, y)
 
     def on_pick_up(self):
         tilemap.remove_sprite(self)
@@ -416,8 +427,10 @@ class Recipe(object):
     def is_input(self, input):
         return input.__class__ in self.inputs
 
-    def is_available(self):
+    def is_available(self, extra_item):
         for input, count in self.inputs.items():
+            if extra_item and extra_item.__class__ is input:
+                count -= 1
             if inventory.get_class_count(input) < count:
                 return False
         return True
@@ -474,6 +487,9 @@ class Camera(object):
 
     def view_to_world(self, x, y):
         return x + self.x - GAME_WIDTH / 2, y + self.y - GAME_HEIGHT / 2
+
+    def world_to_view(self, x, y):
+        return x - self.x + GAME_WIDTH / 2, y - self.y + GAME_HEIGHT / 2
 
     def get_bounds(self):
         return Rect(self.x - GAME_WIDTH / 2, self.y - GAME_HEIGHT / 2, self.x + GAME_WIDTH /2 , self.y + GAME_HEIGHT / 2)
@@ -603,8 +619,10 @@ class CraftAction(object):
     def __call__(self):
         inventory.craft(self.recipe, self.item)
 
-def show_craft_menu(item):
-    game.menu = Menu(item.x - 16, item.y - 32)
+def show_craft_menu(item, x, y):
+    game.menu = Menu(x - 16, y - 32)
+
+    extra_item = item if not item in inventory.items else None
 
     for recipe in recipes:
         if recipe.is_input(item):
@@ -612,7 +630,7 @@ def show_craft_menu(item):
             hint = MenuRecipeHint(recipe)
             if not text:
                 text = 'Craft %s' % recipe.name
-            if recipe.is_available():
+            if recipe.is_available(extra_item):
                 game.menu.add(text, CraftAction(recipe, item), hint=hint)
             else:
                 game.menu.add(text, disabled=True, hint=hint)
@@ -660,14 +678,18 @@ class Inventory(object):
         item.on_dropped()
         
     def craft(self, recipe, initial_item):
-        slot_index = self.items.index(initial_item)
+        if initial_item in self.items:
+            slot_index = self.items.index(initial_item)
+        else:
+            slot_index = len(self.items)
         for output in recipe.outputs:
             crafted_item = output(output.get_default_anim(), 0, 0)
             self.items.insert(slot_index, crafted_item)
         for item_class, count in recipe.inputs.items():
             for i in range(count):
                 if initial_item and initial_item.__class__ is item_class:
-                    self.items.remove(initial_item)
+                    if initial_item in self.items:
+                        self.items.remove(initial_item)
                     initial_item = None
                 else:
                     for item in self.items:
@@ -685,7 +707,7 @@ class Inventory(object):
         if pressed and button == bacon.MouseButtons.left:
             item = self.get_item_at(bacon.mouse.x, bacon.mouse.y)
             if item:
-                show_craft_menu(item)
+                show_craft_menu(item, item.x, item.y)
                 return True
         return False
 
@@ -808,10 +830,9 @@ class Game(bacon.Game):
                 x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
                 ti = tilemap.get_tile_index(x, y)
                 tile = tilemap.tiles[ti]
-                if tile.can_target and tile.walkable:
-                    player.walk_to_tile(tile)
-                    if tile.items:
-                        player.target_item = tile.items[-1]
+                player.walk_to_tile(tile)
+                if tile.items:
+                    player.target_item = tile.items[-1]
 
 game = Game()
 bacon.run(game)
