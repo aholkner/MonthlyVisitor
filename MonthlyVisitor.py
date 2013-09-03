@@ -244,6 +244,9 @@ class Character(Sprite):
         elif dx > 0:
             self.facing = 'right'
         
+    def add_food_motive(self, amount):
+        self.motive_food = min(self.motive_food + amount, 1.0)
+
     def update_player_motives(self):
         self.motive_food = max(self.motive_food - bacon.timestep * 0.01, 0)
 
@@ -332,9 +335,9 @@ class Item(Sprite):
 
     def on_consumed(self):
         if self.food_human and not player.is_wolf:
-            player.motive_food += self.food_human
+            player.add_food_motive(self.food_human)
         elif self.food_wolf and player.is_wolf:
-            player.motive_food += self.food_wolf
+            player.add_food_motive(self.food_wolf)
 
 @spawn
 class Tree(Item):
