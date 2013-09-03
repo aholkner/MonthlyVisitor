@@ -1,5 +1,6 @@
 from math import floor, sqrt
 import os
+import collections
 import itertools
 # For profiling: import sys; sys.path.insert(0, '../bacon')
 
@@ -392,10 +393,12 @@ class Recipe(object):
     :param inputs: dict of class to count
     '''
     def __init__(self, output, inputs, text=None):
-        self.output = output
+        if not isinstance(output, collections.Iterable):
+            output = [output]
+        self.outputs = output
         self.inputs = inputs
         self.text = text
-        self.name = output.__name__
+        self.name = output[0].__name__
           
     def is_input(self, input):
         return input.__class__ in self.inputs
@@ -415,7 +418,7 @@ recipes = [
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat'),
-    Recipe(RawMeat, {Rabbit: 1}, 'Kill for meat'),
+    Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat'),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
     #Recipe(RabbitSnare)
     #Recipe(String
@@ -568,8 +571,9 @@ class Inventory(object):
         
     def craft(self, recipe, initial_item):
         slot_index = self.items.index(initial_item)
-        crafted_item = recipe.output(recipe.output.get_default_anim(), 0, 0)
-        self.items.insert(slot_index, crafted_item)
+        for output in recipe.outputs:
+            crafted_item = output(output.get_default_anim(), 0, 0)
+            self.items.insert(slot_index, crafted_item)
         for item_class, count in recipe.inputs.items():
             for i in range(count):
                 if initial_item and initial_item.__class__ is item_class:
