@@ -77,6 +77,12 @@ def parse_layer(tm, elem, tilesets):
                         tx = 0
                         ty += 1
 
+    if layer.name == 'Collision':
+        tm.layers.remove(layer)
+        for i in range(len(layer.images)):
+            if layer.images[i]:
+                tm.tiles[i].walkable = False
+
 def parse_object_group(tm, elem):
     layer = tilemap.TilemapObjectLayer(elem.get('name'))
     tm.object_layers.append(layer)
