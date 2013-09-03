@@ -24,7 +24,7 @@ def parse_file(data, folder, elem):
     pivot_y = float(elem.get('pivot_y'))
     width = int(elem.get('width'))
     height = int(elem.get('height'))
-    file = SpriterFile(name, int(pivot_x * width), height - int(pivot_y * height))
+    file = SpriterFile(name.strip('/'), int(pivot_x * width), height - int(pivot_y * height))
     folder.files.append(file)
 
 def parse_folder(data, elem):

@@ -24,7 +24,7 @@ class Tile(object):
         return (self.tx, self.ty) < (other.tx, other.ty)
 
     def is_walkable(self):
-        return self._walkable
+        return self._walkable and all(lambda item: item.walkable for item in self.items)
     def set_walkable(self, walkable):
         self._walkable = walkable
     walkable = property(is_walkable, set_walkable)
@@ -33,6 +33,9 @@ class Tile(object):
         self.items.append(item)
         item.x = self.rect.center_x
         item.y = self.rect.center_y
+
+    def remove_item(self, item):
+        self.items.remove(item)
 
 class TilemapObject(object):
     def __init__(self, name, x, y):

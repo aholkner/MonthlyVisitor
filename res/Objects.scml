@@ -3,16 +3,25 @@
     <folder id="0">
         <file id="0" name="Tree1.png" width="96" height="160" pivot_x="0.5" pivot_y="0.0465839"/>
     </folder>
+    <folder id="1">
+        <file id="0" name="/Item-Wood.png" width="20" height="27" pivot_x="0.538391" pivot_y="0.535299"/>
+    </folder>
     <entity id="0" name="Tree1">
         <animation id="0" name="NewAnimation" length="1000">
             <mainline>
                 <key id="0">
                     <object_ref id="0" name="Tree1" folder="0" file="0" abs_x="0" abs_y="1.453416" abs_pivot_x="0.5" abs_pivot_y="0.046584" abs_angle="360" abs_scale_x="1" abs_scale_y="1" abs_a="1" timeline="0" key="0" z_index="0"/>
+                    <object_ref id="1" name="Item-Wood" folder="1" file="0" abs_x="99.767811" abs_y="3.453073" abs_pivot_x="0.538391" abs_pivot_y="0.535299" abs_angle="360" abs_scale_x="1" abs_scale_y="1" abs_a="1" timeline="1" key="0" z_index="1"/>
                 </key>
             </mainline>
             <timeline id="0" name="Tree1">
                 <key id="0" spin="0">
                     <object folder="0" file="0" y="1.453416"/>
+                </key>
+            </timeline>
+            <timeline id="1" name="Item-Wood">
+                <key id="0" spin="0">
+                    <object folder="1" file="0" x="99.767811" y="3.453073"/>
                 </key>
             </timeline>
         </animation>

@@ -237,10 +237,52 @@ class Character(Sprite):
     def get_drop_tile(self):
         return tilemap.get_tile_at(self.x, self.y)
 
+
+_spawn_classes = {}
+def spawn(cls):
+    _spawn_classes[cls.__name__] = cls
+    return cls
+
+def spawn_item(tile, class_name, anim_name=None):
+    try:
+        cls = _spawn_classes[class_name]
+    except KeyError:
+        print('Missing spawn class %s' % class_name)
+        return
+
+    if anim_name is None:
+        anim_name = cls.anim_name
+    
+    try:
+        anim = object_anims[anim_name]
+    except KeyError:
+        print('Missing anim %s for class %s' % (anim_name, class_name))
+        return
+
+    item = cls(anim, tile.rect.center_x, tile.rect.center_y)
+    tile.items.append(item)
+    tilemap.add_sprite(item)
+
 class Item(Sprite):
-    food_value = 0.5
+    walkable = True
+    anim_name = None
 
+    def on_pick_up(self, tile):
+        tile.remove_item(self)
+        tilemap.remove_sprite(self)
 
+    def on_drop(self, tile):
+        tile.add_item(self)
+        tilemap.add_sprite(self)
+
+@spawn
+class Tree(Item):
+    walkable = False
+    anim_name = 'Tree1.png'
+
+@spawn
+class Wood(Item):
+    anim_name ='Item-Wood.png'
 
 def path_arrived(destination):
     def func(tile):
@@ -296,16 +338,13 @@ class Inventory(object):
     def pick_up(self, tile):
         item = tile.items[-1]
         self.items.append(item)
-        del tile.items[-1]
         item.x = self.x + len(self.items) * self.item_size_x
         item.y = self.y
-
-        if item.food_value:
-            player.motive_food = min(player.motive_food + item.food_value, 1.0)
-
+        item.on_pick_up(tile)
+        
     def drop(self, item, tile):
-        tile.add_item(item)
         self.items.remove(item)
+        item.on_drop(tile)
         
     def draw(self):
         bacon.set_color(1, 1, 1, 1)
@@ -324,14 +363,7 @@ class Inventory(object):
                 return True
         return False
 
-def spawn_item(tile, spawn_type):
-    anim = object_anims[spawn_type]
-    item = Item(anim, tile.rect.center_x, tile.rect.center_y)
-    tile.items.append(item)
-    tilemap.add_sprite(item)
 
-    # TODO based on item type
-    tile.walkable = False
 
 object_anims = {}
 object_sprite_data = spriter.parse('res/Objects.scml')
@@ -340,16 +372,18 @@ for folder in object_sprite_data.folders:
         image = load_image(file.name)
         frame = Frame(image, file.pivot_x, file.pivot_y)
         anim = Anim([frame])
-        object_anims[os.path.splitext(file.name)[0]] = anim
+        object_anims[file.name] = anim
 
 tilemap = tiled.parse('res/Tilemap.tmx')
 for layer in tilemap.layers:
     if layer.name == 'Spawns':
         tilemap.layers.remove(layer)
         for i, image in enumerate(layer.images):
-            if image:
+            if image and hasattr(image, 'properties'):
                 tile = tilemap.tiles[i]
-                spawn_item(tile, image.properties['Spawn'])
+                class_name = image.properties.get('Class')
+                anim_name = image.properties.get('Anim')
+                spawn_item(tile, class_name, anim_name)
 
 camera = Camera()
 
@@ -431,7 +465,7 @@ class Game(bacon.Game):
                 x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
                 ti = tilemap.get_tile_index(x, y)
                 tile = tilemap.tiles[ti]
-                if tile.can_target:
+                if tile.can_target and (tile.items or tile.walkable):
                     player.walk_to_tile(tile)
 
 bacon.run(Game())
