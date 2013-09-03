@@ -118,6 +118,9 @@ class Sprite(object):
         y = self.y - self.frame.pivot_y
         return Rect(x, y, x + self.frame.image.width, y + self.frame.image.height)
 
+    def on_collide(self, tile):
+        pass
+
     def move_with_collision(self, tilemap, dx, dy, speed):
         # Slice movement into tile-sized blocks for collision testing
         size = sqrt(dx * dx + dy * dy)
@@ -138,10 +141,12 @@ class Sprite(object):
                 if tile.walkable:
                     self.x += incx
                     did_move = True
-                elif dx > 0:
-                    self.x = tilemap.get_tile_rect(self.x + incx, self.y).x1 - 1
-                elif dx < 0:
-                    self.x = tilemap.get_tile_rect(self.x + incx, self.y).x2 + 1
+                else:
+                    if dx > 0:
+                        self.x = tile.rect.x1 - 1
+                    elif dx < 0:
+                        self.x = tile.rect.x2 + 1
+                    self.on_collide(tile)
 
             # Move along Y
             if dy:
@@ -150,10 +155,12 @@ class Sprite(object):
                 if tile.walkable:
                     self.y += incy
                     did_move = True
-                elif dy > 0:
-                    self.y = tilemap.get_tile_rect(self.x, self.y + incy).y1 - 1
-                elif dy < 0:
-                    self.y = tilemap.get_tile_rect(self.x, self.y + incy).y2 + 1
+                else:
+                    if dy > 0:
+                        self.y = tile.rect.y1 - 1
+                    elif dy < 0:
+                        self.y = tile.rect.y2 + 1
+                    self.on_collide(tile)
 
             size -= inc
         tilemap.update_sprite_position(self)
@@ -170,7 +177,6 @@ class Sprite(object):
 
 class Character(Sprite):
     walk_speed = 200
-    max_item_interact_distance = 48
     facing = 'down'
     action = 'idle'
     cooldown = 0
@@ -235,17 +241,36 @@ class Character(Sprite):
             self.action = 'walk'
         else:
             # Didn't move, so we've arrived at this path node
+            if self.path:
+                del self.path[0]
+                if not self.path:
+                    self.on_arrive(target_tile)
+                
+        self.anim = self.get_anim()
+
+    def on_collide(self, tile):
+        if self.is_wolf:
+            # Check for destructibles on tile
+            for item in tile.items:
+                if item.attackable_wolf:
+                    item.on_attack()
+                    return
+
+        if self.path and self.path[0] == tile:
             del self.path[0]
             if not self.path:
-                self.action = 'idle'
-                if self.target_item:
-                    target_item = self.target_item
-                    self.target_item = None
-                    distance = sqrt(dx * dx + dy * dy)
-                    if distance <= self.max_item_interact_distance:
-                        target_item.on_player_interact(target_tile)
+                self.on_arrive(tile)
+            else:
+                # Path goes through a non-walkable tile, remove path (dynamic world)
+                self.path = None
+                self.target_item = None
 
-        self.anim = self.get_anim()
+    def on_arrive(self, tile):
+        self.action = 'idle'
+        if self.target_item:
+            target_item = self.target_item
+            self.target_item = None
+            target_item.on_player_interact(tile)
 
     def update_facing(self, dx, dy):
         if abs(dy) > abs(dx * 2):
@@ -323,6 +348,7 @@ class Item(Sprite):
     food_human = 0
     food_wolf = 0
     path_cost_wolf = 0
+    attackable_wolf = False
 
     @classmethod
     def get_default_anim(cls):
@@ -341,6 +367,14 @@ class Item(Sprite):
         if cls.name:
             return cls.name
         return cls.__name__
+
+    def destroy(self):
+        if self in inventory.items:
+            inventory.remove(self)
+        else:
+            tile = tilemap.get_tile_at(self.x, self.y)
+            tile.remove_item(self)
+            tilemap.remove_sprite(self)
 
     def on_player_interact(self, tile):
         if self.can_pick_up:
@@ -364,6 +398,10 @@ class Item(Sprite):
         elif self.food_wolf and player.is_wolf:
             player.add_food_motive(self.food_wolf)
             player.wait(0.5)
+
+    def on_attack(self):
+        pass
+
 
 @spawn
 class Tree(Item):
@@ -428,6 +466,8 @@ class Fire(Item):
 class Fence(Item):
     walkable = False
     path_cost_wolf = 10
+    attackable_wolf = True
+    hp = 0.5
     fence_anims = {}
 
     def on_pick_up(self):
@@ -470,10 +510,16 @@ class Fence(Item):
                 return True
         return False
 
+    def on_attack(self):
+        self.hp -= bacon.timestep
+        if self.hp <= 0:
+            self.destroy()
+
 @spawn
 class StrongFence(Fence):
     name = 'Strong Fence'
     path_cost_wolf = 10
+    hp = 2.0
     fence_anims = {}
 
 @spawn
@@ -741,12 +787,7 @@ class ConsumeAction(object):
         self.item = item
 
     def __call__(self):
-        if self.item in inventory.items:
-            inventory.remove(self.item)
-        else:
-            tile = tilemap.get_tile_at(self.item.x, self.item.y)
-            tile.remove_item(self.item)
-            tilemap.remove_sprite(self.item)
+        self.item.destroy()
         self.item.on_consumed()
 
 def show_craft_menu(item, x, y):
