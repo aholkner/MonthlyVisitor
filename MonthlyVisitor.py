@@ -3,6 +3,7 @@ import os
 import sys
 import collections
 import itertools
+import random
 # For profiling: import sys; sys.path.insert(0, '../bacon')
 
 import bacon
@@ -134,6 +135,9 @@ class Sprite(object):
     def on_collide(self, tile):
         pass
 
+    def on_moved_tile(self):
+        pass
+
     def move_with_collision(self, tilemap, dx, dy, speed):
         # Slice movement into tile-sized blocks for collision testing
         size = sqrt(dx * dx + dy * dy)
@@ -178,7 +182,14 @@ class Sprite(object):
                         return True
 
             size -= inc
+        
         tilemap.update_sprite_position(self)
+
+        new_tile = tilemap.get_tile_at(self.x, self.y)
+        if new_tile != self.current_tile:
+            self.current_tile = new_tile
+            self.on_moved_tile()
+
         return did_move
 
     def draw(self):
@@ -207,6 +218,7 @@ class Character(Sprite):
     target_villager = None
     target_waypoint_index = -1
     eating_villager = False
+    current_tile = None
 
     def __init__(self, anims, x, y):
         self.anims = anims
@@ -305,10 +317,16 @@ class Character(Sprite):
             self.target_item = None
             self.action = 'idle'
 
+    def on_moved_tile(self):
+        if self.eating_villager:
+            # Random chance of blood dribble
+            if random.random() < 0.3:
+                spawn_blood(self.x, self.y, dribble=True)
+
     def on_arrive(self, tile):
         self.action = 'idle'
         if self.eating_villager:
-            # Spawn more blood
+            spawn_blood(self.x, self.y)
             # Spawn skeleton
             self.eating_villager = False
             self.add_food_motive(1.0)
@@ -338,10 +356,6 @@ class Character(Sprite):
     def update_wolf_motives(self):
         self.motive_food = max(self.motive_food - bacon.timestep * 0.05, 0)
 
-        if self.cooldown > 0:
-            self.cooldown -= bacon.timestep
-            return
-
         # If we've reached the villager we're after
         if self.target_villager and distance(self, self.target_villager) < self.distance_wolf_villager_attack:
             villagers.remove(self.target_villager)
@@ -351,8 +365,12 @@ class Character(Sprite):
 
             # Small bite
             self.add_food_motive(0.1)
-            # Spawn blood
+            spawn_blood(self.x, self.y)
             self.walk_to_waypoint(1)
+            return
+
+        if self.cooldown > 0:
+            self.cooldown -= bacon.timestep
             return
 
         # If we're standing on food, eat it
@@ -614,9 +632,17 @@ class Steel(Item):
 class Chicken(Item):
     food_wolf = 0.3
 
+    def on_consumed_in_recipe(self):
+        spawn_blood(player.x, player.y)
+        return super().on_consumed_in_recipe()
+
 @spawn
 class Rabbit(Item):
     food_wolf = 0.3
+
+    def on_consumed_in_recipe(self):
+        spawn_blood(player.x, player.y)
+        return super().on_consumed_in_recipe()
 
 class Recipe(object):
     '''
@@ -974,6 +1000,21 @@ for folder in object_sprite_data.folders:
         object_anims[file.name] = anim
 object_anims['Item-Fire'] = spritesheet_anim('Item-Fire.png', 1, 4, 16, 16)
 
+blood_images = []
+blood_dribble_images = []
+blood_layer = None
+
+def spawn_blood(x, y, dribble=False):
+    ti = tilemap.get_tile_index(x, y)
+    if blood_layer.images[ti]:
+        return
+
+    if dribble:
+        image = random.choice(blood_dribble_images)
+    else:
+        image = random.choice(blood_images)
+    blood_layer.images[ti] = image
+
 tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
@@ -990,6 +1031,11 @@ for tileset in tilemap.tilesets:
             if 'StrongFence' in props:
                 fmt = props['StrongFence']
                 StrongFence.fence_anims[fmt] = Anim([Frame(image, 16, 16)])
+            if 'Blood' in props:
+                blood_images.append(image)
+            if 'BloodDribble' in props:
+                blood_dribble_images.append(image)
+
 Fence.fence_anims[''] = Fence.get_default_anim()
 StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 
@@ -1002,7 +1048,8 @@ for layer in tilemap.layers:
                 class_name = image.properties.get('Class')
                 anim_name = image.properties.get('Anim')
                 spawn_item_on_tile(tile, class_name, anim_name)
-
+    elif layer.name == 'Blood':
+        blood_layer = layer
 camera = Camera()
 
 player = Character(player_anims, 0, 0)
