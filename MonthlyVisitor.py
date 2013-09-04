@@ -95,7 +95,7 @@ class Anim(object):
         self.frames = frames
         
 player_anims = lpc_anims('BODY_male.png')
-
+player_anims['death'] = spritesheet_anim('Player-Extra.png', 6, 1, 32, 54)
 
 def distance(a, b):
     dx = a.x - b.x
@@ -108,6 +108,8 @@ class Waypoint(object):
         self.y = y
 
 class Sprite(object):
+    looping = True
+
     def __init__(self, anim, x, y):
         self.anim = anim
         self.frame = anim.frames[0]
@@ -123,7 +125,10 @@ class Sprite(object):
     def set_time(self, time):
         self._time = time
         frame_index = int(time / self.anim.time_per_frame)
-        self.frame = self.anim.frames[frame_index % len(self.anim.frames)]
+        if self.looping:
+            self.frame = self.anim.frames[frame_index % len(self.anim.frames)]
+        else:
+            self.frame = self.anim.frames[min(frame_index, len(self.anim.frames) - 1)]
     time = property(get_time, set_time)
 
     @property
@@ -210,6 +215,7 @@ class Character(Sprite):
     cooldown = 0
     
     is_wolf = False
+    is_dying = False
     motive_food = 1.0
     motive_food_trigger = 0.5
     max_tilemap_path_size = 200
@@ -236,6 +242,17 @@ class Character(Sprite):
             return self.anims[self.action + '_' + self.facing]
         except KeyError:
             return self.anims[self.action]
+
+    def die(self):
+        if self.is_dying:
+            return
+
+        self.is_dying = True
+        self.action = 'death'
+        self.path = None
+        self.looping = False
+        self.time = 0
+        self.anim = self.get_anim()
 
     def walk(self, arrived_func, hueristic_func):
         self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func, self.max_tilemap_path_size)
@@ -359,7 +376,7 @@ class Character(Sprite):
         self.motive_food = max(self.motive_food - bacon.timestep * 0.01, 0)
 
     def update_wolf_motives(self):
-        self.motive_food = max(self.motive_food - bacon.timestep * 0.05, 0)
+        self.motive_food = max(self.motive_food - bacon.timestep * 0.05, 0.01)
 
         # If we've reached the villager we're after
         if self.target_villager and distance(self, self.target_villager) < self.distance_wolf_villager_attack:
@@ -1148,15 +1165,22 @@ class Game(bacon.Game):
         self.menu = None
 
     def on_tick(self):
-        if player.is_wolf:
-            player.update_wolf_motives()
-        else:
-            player.update_player_motives()
-            player.update_player_movement()
+        if not player.is_dying:
+            if player.is_wolf:
+                player.update_wolf_motives()
+            else:
+                player.update_player_motives()
+                player.update_player_movement()
 
-            for factory in factories:
-                factory.update()
+                for factory in factories:
+                    factory.update()
         
+            if player.motive_food <= 0:
+                player.die()
+        else:
+            if player.frame == len(player.anim.frames) - 1:
+                print('end game')
+
         player.update_walk_target_movement()
 
         camera.x = int(player.x)
@@ -1219,7 +1243,7 @@ class Game(bacon.Game):
             self.menu.on_mouse_button(button, pressed)
             return
 
-        if not player.is_wolf:
+        if not player.is_wolf and not player.is_dying:
             if inventory.on_mouse_button(button, pressed):
                 return
 
