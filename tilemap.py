@@ -129,7 +129,7 @@ class Tilemap(object):
         tx1 = max(0, int(floor(rect.x1 / self.tile_width)))
         ty1 = max(0, int(floor(rect.y1 / self.tile_height)))
         tx2 = min(self.cols, int(floor(rect.x2 / self.tile_width)) + 1)
-        ty2 = min(self.rows, int(floor(rect.y2 / self.tile_height)) + 1)
+        ty2 = min(self.rows, int(floor(rect.y2 / self.tile_height)) + 5)
         sprite_layer_index = self.sprite_layer_index
         for ty in range(ty1, ty2):
             ti = ty * self.cols + tx1
