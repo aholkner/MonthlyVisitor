@@ -92,6 +92,19 @@ class Anim(object):
 
     def __init__(self, frames):
         self.frames = frames
+        
+player_anims = lpc_anims('BODY_male.png')
+
+
+def distance(a, b):
+    dx = a.x - b.x
+    dy = a.y - b.y
+    return sqrt(dx * dx + dy * dy)
+
+class Waypoint(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 class Sprite(object):
     def __init__(self, anim, x, y):
@@ -186,7 +199,14 @@ class Character(Sprite):
     is_wolf = False
     motive_food = 1.0
     motive_food_trigger = 0.5
-    
+    max_tilemap_path_size = 200
+
+    distance_wolf_villager_search = GAME_WIDTH * 1.5
+    distance_wolf_villager_attack = 16
+    distance_wolf_waypoint_search = GAME_WIDTH * 1.5
+    target_villager = None
+    target_waypoint_index = -1
+    eating_villager = False
 
     def __init__(self, anims, x, y):
         self.anims = anims
@@ -204,11 +224,25 @@ class Character(Sprite):
             return self.anims[self.action]
 
     def walk(self, arrived_func, hueristic_func):
-        self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func)
+        self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func, self.max_tilemap_path_size)
+        return self.path != None
 
     def walk_to_tile(self, tile):
         self.target_item = None
-        self.walk(path_arrived(tile), path_heuristic_player(tile))
+        return self.walk(path_arrived(tile), path_heuristic_player(tile))
+
+    def walk_to(self, x, y):
+        tile = tilemap.get_tile_at(x, y)
+        return self.walk_to_tile(tile)
+
+    def walk_to_waypoint(self, target_index):
+        self.target_waypoint_index = target_index
+        waypoints.sort(key=lambda v:distance(v, self))
+        for waypoint in waypoints:
+            if distance(self, waypoint) < self.distance_wolf_waypoint_search:
+                if self.walk_to(waypoint.x, waypoint.y):
+                    return True
+                
 
     def update_player_movement(self):
         dx = 0
@@ -258,17 +292,27 @@ class Character(Sprite):
                     item.on_attack()
                     return True
 
-        if self.path and self.path[0] == tile:
-            del self.path[0]
-            if not self.path:
-                self.on_arrive(tile)
-            else:
-                # Path goes through a non-walkable tile, remove path (dynamic world)
-                self.path = None
-                self.target_item = None
+        if self.path:
+            if self.path[0] == tile:
+                # Arrived at non-walkable tile
+                del self.path[0]
+                if not self.path:
+                    self.on_arrive(tile)
+                    return
+
+            # Path goes through a non-walkable tile, stop walking
+            self.path = None
+            self.target_item = None
+            self.action = 'idle'
 
     def on_arrive(self, tile):
         self.action = 'idle'
+        if self.eating_villager:
+            # Spawn more blood
+            # Spawn skeleton
+            self.eating_villager = False
+            self.add_food_motive(1.0)
+
         if self.target_item:
             target_item = self.target_item
             self.target_item = None
@@ -298,6 +342,19 @@ class Character(Sprite):
             self.cooldown -= bacon.timestep
             return
 
+        # If we've reached the villager we're after
+        if self.target_villager and distance(self, self.target_villager) < self.distance_wolf_villager_attack:
+            villagers.remove(self.target_villager)
+            tilemap.remove_sprite(self.target_villager)
+            self.target_villager = None
+            self.eating_villager = True
+
+            # Small bite
+            self.add_food_motive(0.1)
+            # Spawn blood
+            self.walk_to_waypoint(1)
+            return
+
         # If we're standing on food, eat it
         tile = tilemap.get_tile_at(self.x, self.y)
         for item in tile.items:
@@ -306,7 +363,15 @@ class Character(Sprite):
 
         if self.motive_food < self.motive_food_trigger:
             if not self.path:
-                # Search for nearby food -- note that the returned path is not optimal, but
+                # Search for nearby villagers
+                villagers.sort(key=lambda v:distance(v, self))
+                for villager in villagers:
+                    if distance(self, villager) < self.distance_wolf_villager_search:
+                        if self.walk_to(villager.x, villager.y): 
+                            self.target_villager = villager
+                            return
+
+                # Search for nearby items that are food -- note that the returned path is not optimal, but
                 # looks more organic anyway
                 self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search())
 
@@ -552,8 +617,6 @@ class Chicken(Item):
 @spawn
 class Rabbit(Item):
     food_wolf = 0.3
-
-
 
 class Recipe(object):
     '''
@@ -942,8 +1005,9 @@ for layer in tilemap.layers:
 
 camera = Camera()
 
-player_anims = lpc_anims('BODY_male.png')
 player = Character(player_anims, 0, 0)
+villagers = []
+waypoints = []
 tilemap.add_sprite(player)
 inventory = Inventory()
 
@@ -953,6 +1017,14 @@ for object_layer in tilemap.object_layers:
             player.x = object.x
             player.y = object.y
             tilemap.update_sprite_position(player)
+        elif object.name == 'Villager':
+            villager = Character(player_anims, object.x, object.y)
+            villagers.append(villager)
+            tilemap.add_sprite(villager)
+        elif object.name == 'Waypoint':
+            waypoint = Waypoint(object.x, object.y)
+            waypoints.append(waypoint)
+
 
 class Game(bacon.Game):
     def __init__(self):
@@ -1035,7 +1107,9 @@ class Game(bacon.Game):
                 x, y = camera.view_to_world(bacon.mouse.x, bacon.mouse.y)
                 ti = tilemap.get_tile_index(x, y)
                 tile = tilemap.tiles[ti]
-                player.walk_to_tile(tile)
+                if not player.walk_to_tile(tile):
+                    # Path find failed, walk in straight line
+                    player.path = [tile]
                 if tile.items:
                     player.target_item = tile.items[-1]
 

@@ -161,7 +161,7 @@ class Tilemap(object):
                         bacon.draw_image(image, r.x1, r.y1 + layer.offset_y, r.x2, r.y2 + layer.offset_y)
                 ti += 1
 
-    def get_path(self, start_tile, arrived_func, heuristic_func):
+    def get_path(self, start_tile, arrived_func, heuristic_func, max_size):
         # http://stackoverflow.com/questions/4159331/python-speed-up-an-a-star-pathfinding-algorithm
         for tile in self.tiles:
             tile.path_parent = None
@@ -208,7 +208,8 @@ class Tilemap(object):
 
         open = []
         open.append((0, start_tile))
-        while open:
+        while open and max_size >= 0:
+            max_size -= 1
             score, current = heapq.heappop(open)
             if arrived_func(current):
                 return retrace(current)

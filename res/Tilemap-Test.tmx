@@ -30521,6 +30521,10 @@
  </layer>
  <objectgroup name="Objects" width="50" height="50">
   <object name="PlayerStart" gid="641" x="1148" y="1041"/>
+  <object name="Villager" gid="793" x="1256" y="1094"/>
+  <object name="Waypoint" gid="794" x="1155" y="1192"/>
+  <object name="Waypoint" gid="794" x="1196" y="856"/>
+  <object name="Waypoint" gid="794" x="998" y="1083"/>
  </objectgroup>
  <layer name="Collision" width="50" height="50" opacity="0.6">
   <properties>
