@@ -55,8 +55,8 @@ class SpriteSheet(object):
                 cell = image.get_region(x, y, x + cell_width, y + cell_height)
                 cell_row.append(cell)
 
-def lpc_anims(image):
-    sheet = SpriteSheet(image, 9, 4)
+def lpc_anims(image, cols, rows):
+    sheet = SpriteSheet(image, cols, rows)
     up = sheet.cells[0]
     left = sheet.cells[1]
     down = sheet.cells[2]
@@ -66,16 +66,28 @@ def lpc_anims(image):
         anim.time_per_frame = 0.1
         return anim
 
-    return dict(
-        idle_up = make_anim(up[:1]),
-        walk_up = make_anim(up[1:]),
-        idle_left = make_anim(left[:1]),
-        walk_left = make_anim(left[1:]),
-        idle_down = make_anim(down[:1]),
-        walk_down = make_anim(down[1:]),
-        idle_right = make_anim(right[:1]),
-        walk_right = make_anim(right[1:])
-    )
+    if cols > 4:
+        return dict(
+            idle_up = make_anim(up[:1]),
+            walk_up = make_anim(up[1:]),
+            idle_left = make_anim(left[:1]),
+            walk_left = make_anim(left[1:]),
+            idle_down = make_anim(down[:1]),
+            walk_down = make_anim(down[1:]),
+            idle_right = make_anim(right[:1]),
+            walk_right = make_anim(right[1:])
+        )
+    else:
+        return dict(
+            idle_up = make_anim(up[:1]),
+            walk_up = make_anim(up),
+            idle_left = make_anim(left[:1]),
+            walk_left = make_anim(left),
+            idle_down = make_anim(down[:1]),
+            walk_down = make_anim(down),
+            idle_right = make_anim(right[:1]),
+            walk_right = make_anim(right)
+        )
 
 def spritesheet_anim(image, cols, rows, pivot_x, pivot_y):
     sheet = SpriteSheet(image, cols, rows)
@@ -94,8 +106,11 @@ class Anim(object):
     def __init__(self, frames):
         self.frames = frames
         
-player_anims = lpc_anims('BODY_male.png')
+player_anims = lpc_anims('BODY_male.png', 9, 4)
 player_anims['death'] = spritesheet_anim('Player-Extra.png', 6, 1, 32, 54)
+
+chicken_anims = lpc_anims('Chicken.png', 4, 4)
+
 
 def distance(a, b):
     dx = a.x - b.x
@@ -462,6 +477,37 @@ class Character(Sprite):
                 return candidate
 
         return None
+
+    
+class Animal(Character):
+    walk_speed = 50
+
+    def update_animal_movement(self):
+        if not self.path:
+            if self.cooldown > 0:
+                self.cooldown -= bacon.timestep
+                return
+            dx = random.randrange(-4, 4) * 32
+            dy = random.randrange(-4, 4) * 32
+            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+            self.wait(random.randrange(1, 8))
+        self.update_walk_target_movement()
+
+
+class Villager(Character):
+    walk_speed = 50
+
+    def update_villager_movement(self):
+        if not self.path:
+            if self.cooldown > 0:
+                self.cooldown -= bacon.timestep
+                return
+            dx = random.randrange(-4, 4) * 32
+            dy = random.randrange(-4, 4) * 32
+            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+            self.wait(random.randrange(1, 8))
+        self.update_walk_target_movement()
+
 
 _spawn_classes = {}
 def spawn(cls):
@@ -1115,7 +1161,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap.tmx')
+tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
@@ -1138,6 +1184,15 @@ for tileset in tilemap.tilesets:
 Fence.fence_anims[''] = Fence.get_default_anim()
 StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 
+
+player = Character(player_anims, 0, 0)
+villagers = []
+animals = []
+waypoints = []
+tilemap.add_sprite(player)
+inventory = Inventory()
+
+
 for layer in tilemap.layers:
     if layer.name == 'Spawns':
         tilemap.layers.remove(layer)
@@ -1146,7 +1201,11 @@ for layer in tilemap.layers:
                 tile = tilemap.tiles[i]
                 class_name = image.properties.get('Class')
                 anim_name = image.properties.get('Anim')
-                if class_name:
+                if class_name == 'Chicken':
+                    animal = Animal(chicken_anims, tile.rect.center_x, tile.rect.center_y)
+                    animals.append(animal)
+                    tilemap.add_sprite(animal)
+                elif class_name:
                     spawn_item_on_tile(tile, class_name, anim_name)
                 
                 factory_class = image.properties.get('FactoryClass')
@@ -1158,11 +1217,6 @@ for layer in tilemap.layers:
         blood_layer = layer
 camera = Camera()
 
-player = Character(player_anims, 0, 0)
-villagers = []
-waypoints = []
-tilemap.add_sprite(player)
-inventory = Inventory()
 
 for object_layer in tilemap.object_layers:
     for object in object_layer.objects:
@@ -1171,7 +1225,7 @@ for object_layer in tilemap.object_layers:
             player.y = object.y
             tilemap.update_sprite_position(player)
         elif object.name == 'Villager':
-            villager = Character(player_anims, object.x, object.y)
+            villager = Villager(player_anims, object.x, object.y)
             villager.name = object.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
@@ -1203,6 +1257,11 @@ class Game(bacon.Game):
         if self.screen:
             self.screen.on_tick()
             return
+
+        for animal in animals:
+            animal.update_animal_movement()
+        for villager in villagers:
+            villager.update_villager_movement()
 
         if not player.is_dying:
             if player.is_wolf:
