@@ -175,8 +175,7 @@ class Sprite(object):
                         self.x = tile.rect.x1 - 1
                     elif dx < 0:
                         self.x = tile.rect.x2 + 1
-                    if self.on_collide(tile):
-                        return True
+                    return self.on_collide(tile)
 
             # Move along Y
             if dy:
@@ -190,8 +189,7 @@ class Sprite(object):
                         self.y = tile.rect.y1 - 1
                     elif dy < 0:
                         self.y = tile.rect.y2 + 1
-                    if self.on_collide(tile):
-                        return True
+                    return self.on_collide(tile)
 
             size -= inc
         
@@ -225,7 +223,7 @@ class Character(Sprite):
     is_dying = False
     motive_food = 1.0
     motive_food_trigger = 0.5
-    max_tilemap_path_size = 200
+    max_tilemap_path_size = 500
 
     distance_wolf_villager_search = GAME_WIDTH * 1.5
     distance_wolf_villager_attack = 16
@@ -267,7 +265,7 @@ class Character(Sprite):
 
     def walk(self, arrived_func, hueristic_func):
         self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func, self.max_tilemap_path_size)
-        return self.path != None
+        return self.path
 
     def walk_to_tile(self, tile):
         self.target_item = None
@@ -340,12 +338,13 @@ class Character(Sprite):
                 del self.path[0]
                 if not self.path:
                     self.on_arrive(tile)
-                    return
+                    return False
 
             # Path goes through a non-walkable tile, stop walking
             self.path = None
             self.target_item = None
             self.action = 'idle'
+            return False
 
     def on_moved_tile(self):
         if self.eating_villager:
