@@ -146,7 +146,8 @@ class Sprite(object):
                         self.x = tile.rect.x1 - 1
                     elif dx < 0:
                         self.x = tile.rect.x2 + 1
-                    self.on_collide(tile)
+                    if self.on_collide(tile):
+                        return True
 
             # Move along Y
             if dy:
@@ -160,7 +161,8 @@ class Sprite(object):
                         self.y = tile.rect.y1 - 1
                     elif dy < 0:
                         self.y = tile.rect.y2 + 1
-                    self.on_collide(tile)
+                    if self.on_collide(tile):
+                        return True
 
             size -= inc
         tilemap.update_sprite_position(self)
@@ -254,7 +256,7 @@ class Character(Sprite):
             for item in tile.items:
                 if item.attackable_wolf:
                     item.on_attack()
-                    return
+                    return True
 
         if self.path and self.path[0] == tile:
             del self.path[0]
@@ -460,6 +462,7 @@ class Axe(Item):
 @spawn
 class Fire(Item):
     walkable = False
+    path_cost_wolf = 99999
     can_pick_up = False
 
 @spawn
