@@ -123,12 +123,16 @@ class Sprite(object):
     def get_time(self):
         return self._time
     def set_time(self, time):
+        old_time = self._time
         self._time = time
         frame_index = int(time / self.anim.time_per_frame)
         if self.looping:
             self.frame = self.anim.frames[frame_index % len(self.anim.frames)]
         else:
             self.frame = self.anim.frames[min(frame_index, len(self.anim.frames) - 1)]
+            old_frame_index = int(old_time / self.anim.time_per_frame)
+            if old_frame_index < len(self.anim.frames) and frame_index >= len(self.anim.frames):
+                self.on_anim_finished()
     time = property(get_time, set_time)
 
     @property
@@ -136,6 +140,9 @@ class Sprite(object):
         x = self.x - self.frame.pivot_x
         y = self.y - self.frame.pivot_y
         return Rect(x, y, x + self.frame.image.width, y + self.frame.image.height)
+
+    def on_anim_finished(self):
+        pass
 
     def on_collide(self, tile):
         pass
@@ -253,6 +260,10 @@ class Character(Sprite):
         self.looping = False
         self.time = 0
         self.anim = self.get_anim()
+
+    def on_anim_finished(self):
+        if self.is_dying:
+            game.screen = GameOverScreen()
 
     def walk(self, arrived_func, hueristic_func):
         self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func, self.max_tilemap_path_size)
@@ -1160,11 +1171,30 @@ for object_layer in tilemap.object_layers:
             waypoints.append(waypoint)
 
 
+class GameOverScreen(bacon.Game):
+    def __init__(self):
+        pass
+
+    def on_tick(self):
+        bacon.clear(0, 0, 0, 1)
+        bacon.set_color(1, 1, 1, 1)
+        bacon.draw_string(font_ui, 'You have died.', 
+                          0, 0, GAME_WIDTH, GAME_HEIGHT,
+                          align = bacon.Alignment.center,
+                          vertical_align = bacon.VerticalAlignment.center)
+
+                         
+
 class Game(bacon.Game):
     def __init__(self):
         self.menu = None
+        self.screen = None
 
     def on_tick(self):
+        if self.screen:
+            self.screen.on_tick()
+            return
+
         if not player.is_dying:
             if player.is_wolf:
                 player.update_wolf_motives()
@@ -1177,9 +1207,6 @@ class Game(bacon.Game):
         
             if player.motive_food <= 0:
                 player.die()
-        else:
-            if player.frame == len(player.anim.frames) - 1:
-                print('end game')
 
         player.update_walk_target_movement()
 
@@ -1230,6 +1257,10 @@ class Game(bacon.Game):
             self.menu.draw()
 
     def on_key(self, key, pressed):
+        if self.screen:
+            self.screen.on_key(key, pressed)
+            return
+
         if ENABLE_CHEATS:
             if pressed and key == bacon.Keys.w:
                 player.is_wolf = not player.is_wolf
@@ -1239,6 +1270,9 @@ class Game(bacon.Game):
                 player.motive_food += 0.2
 
     def on_mouse_button(self, button, pressed):
+        if self.screen:
+            self.screen.on_mouse_button(button, pressed)
+
         if self.menu:
             self.menu.on_mouse_button(button, pressed)
             return

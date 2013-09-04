@@ -541,31 +541,37 @@
   <tile id="56">
    <properties>
     <property name="FactoryClass" value="RawMeat"/>
+    <property name="Owner" value="Butcher"/>
    </properties>
   </tile>
   <tile id="57">
    <properties>
     <property name="FactoryClass" value="Bread"/>
+    <property name="Owner" value="Baker"/>
    </properties>
   </tile>
   <tile id="58">
    <properties>
     <property name="FactoryClass" value="CookedMeat"/>
+    <property name="Owner" value="Butcher"/>
    </properties>
   </tile>
   <tile id="59">
    <properties>
     <property name="FactoryClass" value="Steel"/>
+    <property name="Owner" value="Blacksmith"/>
    </properties>
   </tile>
   <tile id="60">
    <properties>
     <property name="FactoryClass" value="Iron"/>
+    <property name="Owner" value="Blacksmith"/>
    </properties>
   </tile>
   <tile id="61">
    <properties>
     <property name="FactoryClass" value="Stick"/>
+    <property name="Owner" value="Carpenter"/>
    </properties>
   </tile>
   <tile id="62">
