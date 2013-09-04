@@ -105,9 +105,10 @@ def parse_object_group(tm, elem):
     for object in elem:
         if object.tag == 'object':
             name = object.get('name')
+            type = object.get('type')
             x = int(object.get('x'))
             y = int(object.get('y'))
-            layer.objects.append(tilemap.TilemapObject(name, x, y))
+            layer.objects.append(tilemap.TilemapObject(name, type, x, y))
 
 def parse(tmx_file):
     base_dir = os.path.dirname(tmx_file)

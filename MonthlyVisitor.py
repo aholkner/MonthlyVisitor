@@ -202,11 +202,13 @@ class Sprite(object):
         self.time += bacon.timestep
 
 class Character(Sprite):
+    name = None
+
     walk_speed = 200
     facing = 'down'
     action = 'idle'
     cooldown = 0
-
+    
     is_wolf = False
     motive_food = 1.0
     motive_food_trigger = 0.5
@@ -361,6 +363,11 @@ class Character(Sprite):
 
         # If we've reached the villager we're after
         if self.target_villager and distance(self, self.target_villager) < self.distance_wolf_villager_attack:
+            # Remove villager's factories
+            if self.target_villager.name:
+                factories[:] = [f for f in factories if f.owner != self.target_villager.name]
+
+            # Remove villager
             villagers.remove(self.target_villager)
             tilemap.remove_sprite(self.target_villager)
             self.target_villager = None
@@ -753,7 +760,7 @@ class Factory(object):
         self.tile = tile
         self.cooldown_time = cooldown_time
         self.cooldown = 0
-        self.owner = None
+        self.owner = owner
 
     def produce(self):
         if not self.tile.items:
@@ -1128,6 +1135,7 @@ for object_layer in tilemap.object_layers:
             tilemap.update_sprite_position(player)
         elif object.name == 'Villager':
             villager = Character(player_anims, object.x, object.y)
+            villager.name = object.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
         elif object.name == 'Waypoint':
