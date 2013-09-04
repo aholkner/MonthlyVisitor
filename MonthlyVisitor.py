@@ -817,6 +817,16 @@ class Camera(object):
     def world_to_view(self, x, y):
         return x - self.x + GAME_WIDTH / 2, y - self.y + GAME_HEIGHT / 2
 
+    def clamp_to_bounds(self, bounds):
+        if self.x - GAME_WIDTH / 2 < bounds.x1:
+            self.x = bounds.x1 + GAME_WIDTH / 2
+        if self.x + GAME_WIDTH / 2 > bounds.x2:
+            self.x = bounds.x2 - GAME_WIDTH / 2
+        if self.y - GAME_HEIGHT / 2 < bounds.y1:
+            self.y = bounds.y1 + GAME_HEIGHT / 2
+        if self.y + GAME_HEIGHT / 2 > bounds.y2:
+            self.y = bounds.y2 - GAME_HEIGHT / 2
+
     def get_bounds(self):
         return Rect(self.x - GAME_WIDTH / 2, self.y - GAME_HEIGHT / 2, self.x + GAME_WIDTH /2 , self.y + GAME_HEIGHT / 2)
 
@@ -1211,6 +1221,7 @@ class Game(bacon.Game):
 
         camera.x = int(player.x)
         camera.y = int(player.y)
+        camera.clamp_to_bounds(tilemap.get_bounds())
 
         bacon.clear(0.8, 0.7, 0.6, 1.0)
         bacon.push_transform()
