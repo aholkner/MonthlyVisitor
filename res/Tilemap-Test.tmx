@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="50" height="50" tilewidth="32" tileheight="32">
- <tileset firstgid="1" source="Tileset-Terrain.tsx" />
- <tileset firstgid="257" source="Tileset-Interior.tsx" />
- <tileset firstgid="513" source="Tileset-Landscape.tsx" />
- <tileset firstgid="769" source="Tileset-ObjectSpawns.tsx" />
+ <tileset firstgid="1" source="Tileset-Terrain.tsx"/>
+ <tileset firstgid="257" source="Tileset-Interior.tsx"/>
+ <tileset firstgid="513" source="Tileset-Landscape.tsx"/>
+ <tileset firstgid="769" source="Tileset-ObjectSpawns.tsx"/>
  <layer name="Background" width="50" height="50">
   <data>
    <tile gid="152"/>
