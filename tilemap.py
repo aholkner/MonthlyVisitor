@@ -71,7 +71,7 @@ class Tilemap(object):
         self.layers = []
         self.object_layers = []
         self.scanlines = [TilemapScanline() for row in range(rows)]
-        self.sprite_layer_index = 5
+        self.sprite_layer_index = 6
 
         self.tiles = []
         y = 0

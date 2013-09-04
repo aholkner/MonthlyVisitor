@@ -327,7 +327,10 @@ class Character(Sprite):
         self.action = 'idle'
         if self.eating_villager:
             spawn_blood(self.x, self.y)
-            # Spawn skeleton
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneRibs')
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneSkull')
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneLegs')
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
             self.eating_villager = False
             self.add_food_motive(1.0)
 
@@ -394,8 +397,37 @@ class Character(Sprite):
                 self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search())
 
     def get_drop_tile(self):
-        return tilemap.get_tile_at(self.x, self.y)
+        tile = tilemap.get_tile_at(self.x, self.y)
+        if not tile.items:
+            return tile
 
+        if self.facing == 'left':
+            tile = tilemap.get_tile_at(self.x - 32, self.y)
+        elif self.facing == 'right':
+            tile = tilemap.get_tile_at(self.x + 32, self.y)
+        elif self.facing == 'up':
+            tile = tilemap.get_tile_at(self.x, self.y - 32)
+        elif self.facing == 'down':
+            tile = tilemap.get_tile_at(self.x, self.y + 32)
+        if not tile.items:
+            return tile
+
+        candidates = [
+            tilemap.get_tile_at(self.x, self.y - 32),
+            tilemap.get_tile_at(self.x, self.y + 32),
+            tilemap.get_tile_at(self.x - 32, self.y),
+            tilemap.get_tile_at(self.x + 32, self.y),
+            tilemap.get_tile_at(self.x - 32, self.y - 32),
+            tilemap.get_tile_at(self.x - 32, self.y + 32),
+            tilemap.get_tile_at(self.x + 32, self.y - 32),
+            tilemap.get_tile_at(self.x + 32, self.y + 32)
+        ]
+        random.shuffle(candidates)
+        for candidate in candidates:
+            if not candidate.items:
+                return candidate
+
+        return None
 
 _spawn_classes = {}
 def spawn(cls):
@@ -864,7 +896,9 @@ class DropAction(object):
         self.item = item
 
     def __call__(self):
-        inventory.drop(self.item, player.get_drop_tile())
+        tile = player.get_drop_tile()
+        if tile:
+            inventory.drop(self.item, tile)
 
 class CraftAction(object):
     def __init__(self, recipe, item):
@@ -1023,7 +1057,6 @@ for tileset in tilemap.tilesets:
             if 'Anim' in props:
                 object_anims[props['Anim']] = Anim([Frame(image, 16, 16)])
             if 'Class' in props:
-                object_anims[props['Class'] + '-Inventory'] = Anim([Frame(image, 16, 16)])
                 _spawn_classes[props['Class']].inventory_image = image
             if 'Fence' in props:
                 fmt = props['Fence']

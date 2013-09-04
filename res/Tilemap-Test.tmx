@@ -458,6 +458,21 @@
     <property name="Class" value="Iron"/>
    </properties>
   </tile>
+  <tile id="26">
+   <properties>
+    <property name="Anim" value="BoneSkull"/>
+   </properties>
+  </tile>
+  <tile id="27">
+   <properties>
+    <property name="Anim" value="BoneLegs"/>
+   </properties>
+  </tile>
+  <tile id="28">
+   <properties>
+    <property name="Anim" value="BoneRibs"/>
+   </properties>
+  </tile>
   <tile id="32">
    <properties>
     <property name="Blood" value=""/>
@@ -36992,9 +37007,9 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="769"/>
+   <tile gid="769"/>
+   <tile gid="769"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -37241,7 +37256,7 @@
    <tile gid="779"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="779"/>
+   <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
