@@ -1,8 +1,9 @@
 import os.path
 import base64
+import gzip
 import struct
 import xml.etree.cElementTree as ET
-
+import zlib
 
 import bacon
 import tilemap
@@ -91,6 +92,11 @@ def parse_layer(tm, elem, tilesets):
             encoding = child.get('encoding')
             if encoding == 'base64':
                 data = base64.b64decode(child.text)
+                compression = child.get('compression')
+                if compression == 'gzip':
+                    data = gzip.decompress(data)
+                elif compression == 'zlib':
+                    data = zlib.decompress(data)
                 for gid in struct.unpack('%dI' % (len(data) / 4), data):
                     add_tile(gid)
                     tx += 1
