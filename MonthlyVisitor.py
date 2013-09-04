@@ -242,6 +242,7 @@ class Character(Sprite):
     motive_food = 1.0
     motive_food_trigger = 0.5
     max_tilemap_path_size = 500
+    distance_player_pickup_animal = 24
 
     distance_wolf_villager_search = GAME_WIDTH * 1.5
     distance_wolf_villager_attack = 16
@@ -372,19 +373,6 @@ class Character(Sprite):
 
     def on_arrive(self, tile):
         self.action = 'idle'
-        if self.eating_villager:
-            spawn_blood(self.x, self.y)
-            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneRibs')
-            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneSkull')
-            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneLegs')
-            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
-            self.eating_villager = False
-            self.add_food_motive(1.0)
-
-        if self.target_item:
-            target_item = self.target_item
-            self.target_item = None
-            target_item.on_player_interact(tile)
 
     def update_facing(self, dx, dy):
         if abs(dy) > abs(dx * 2):
@@ -482,6 +470,33 @@ class Character(Sprite):
         return None
 
     
+class Player(Character):
+    
+    def on_arrive(self, tile):
+        self.action = 'idle'
+        if self.eating_villager:
+            spawn_blood(self.x, self.y)
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneRibs')
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneSkull')
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneLegs')
+            spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
+            self.eating_villager = False
+            self.add_food_motive(1.0)
+
+        if self.target_item:
+            target_item = self.target_item
+            self.target_item = None
+            target_item.on_player_interact(tile)
+        else:
+            # Check if we arrived on an animal
+            for animal in animals:
+                if distance(self, animal) < self.distance_player_pickup_animal:
+                    item = animal.item_cls(animal.item_cls.get_default_anim(), 0, 0)
+                    inventory.add_item(item)
+                    tilemap.remove_sprite(animal)
+                    animals.remove(animal)
+                    return
+
 class Animal(Character):
     walk_speed = 50
 
@@ -594,7 +609,8 @@ class Item(Sprite):
     def on_pick_up(self):
         tilemap.remove_sprite(self)
 
-    def on_dropped(self):
+    def on_dropped(self, tile):
+        tile.add_item(self)
         tilemap.add_sprite(self)
 
     def on_consumed_in_recipe(self):
@@ -683,7 +699,7 @@ class Fence(Item):
         super(Fence, self).on_pick_up()
         self.update_fence_and_adjacent()
 
-    def on_dropped(self):
+    def on_dropped(self, tile):
         super(Fence, self).on_dropped()
         self.update_fence_and_adjacent()
 
@@ -754,6 +770,12 @@ class Steel(Item):
 @spawn
 class Chicken(Item):
     food_wolf = 0.3
+
+    def on_dropped(self, tile):
+        animal = Animal(chicken_anims, tile.rect.center_x, tile.rect.center_y)
+        animal.item_cls = self.__class__
+        tilemap.add_sprite(animal)
+        animals.append(animal)
 
     def on_consumed_in_recipe(self):
         spawn_blood(player.x, player.y)
@@ -1102,8 +1124,7 @@ class Inventory(object):
 
     def drop(self, item, tile):
         self.items.remove(item)
-        tile.add_item(item)
-        item.on_dropped()
+        item.on_dropped(tile)
 
     def remove(self, item):
         self.items.remove(item)
@@ -1172,7 +1193,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap.tmx')
+tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
@@ -1196,7 +1217,7 @@ Fence.fence_anims[''] = Fence.get_default_anim()
 StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 
 
-player = Character(player_anims, 0, 0)
+player = Player(player_anims, 0, 0)
 villagers = []
 animals = []
 waypoints = []
@@ -1214,6 +1235,7 @@ for layer in tilemap.layers:
                 anim_name = image.properties.get('Anim')
                 if class_name == 'Chicken':
                     animal = Animal(chicken_anims, tile.rect.center_x, tile.rect.center_y)
+                    animal.item_cls = Chicken
                     animals.append(animal)
                     tilemap.add_sprite(animal)
                 elif class_name:
