@@ -453,7 +453,7 @@ def spawn_item_on_tile(tile, class_name, anim_name=None):
         y = tile.rect.center_y
         item = cls(anim, x, y)
         tile.items.append(item)
-        tilemap.add_sprite(item)
+        tilemap.add_sprite(item) 
     return item
     
 class Item(Sprite):
@@ -746,6 +746,28 @@ def path_hueristic_wolf_search():
             return max(item.path_cost_wolf for item in tile.items)
         return tile.path_cost
     return func
+
+class Factory(object):
+    def __init__(self, tile, spawn_class_name, owner=None, cooldown_time=5):
+        self.spawn_class_name = spawn_class_name
+        self.tile = tile
+        self.cooldown_time = cooldown_time
+        self.cooldown = 0
+        self.owner = None
+
+    def produce(self):
+        if not self.tile.items:
+            spawn_item_on_tile(self.tile, self.spawn_class_name)
+
+    def update(self):
+        if tile.items:
+            self.cooldown = self.cooldown_time
+        else:
+            self.cooldown -= bacon.timestep
+            if self.cooldown <= 0:
+                self.produce()
+
+factories = []
 
 class Camera(object):
     def __init__(self):
@@ -1080,7 +1102,14 @@ for layer in tilemap.layers:
                 tile = tilemap.tiles[i]
                 class_name = image.properties.get('Class')
                 anim_name = image.properties.get('Anim')
-                spawn_item_on_tile(tile, class_name, anim_name)
+                if class_name:
+                    spawn_item_on_tile(tile, class_name, anim_name)
+                
+                factory_class = image.properties.get('FactoryClass')
+                if factory_class:
+                    owner = image.properties.get('Owner')
+                    cooldown = int(image.properties.get('Cooldown', 5))
+                    factories.append(Factory(tile, factory_class, owner, cooldown))
     elif layer.name == 'Blood':
         blood_layer = layer
 camera = Camera()
@@ -1116,6 +1145,9 @@ class Game(bacon.Game):
         else:
             player.update_player_motives()
             player.update_player_movement()
+
+            for factory in factories:
+                factory.update()
         
         player.update_walk_target_movement()
 
