@@ -795,7 +795,7 @@ class Factory(object):
             spawn_item_on_tile(self.tile, self.spawn_class_name)
 
     def update(self):
-        if tile.items:
+        if self.tile.items:
             self.cooldown = self.cooldown_time
         else:
             self.cooldown -= bacon.timestep
@@ -1106,7 +1106,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
