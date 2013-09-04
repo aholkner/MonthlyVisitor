@@ -1,5 +1,8 @@
 import os.path
+import base64
+import struct
 import xml.etree.cElementTree as ET
+
 
 import bacon
 import tilemap
@@ -85,13 +88,23 @@ def parse_layer(tm, elem, tilesets):
                         layer.offset_y = -tm.tile_height * int(value)
                         ty += int(value)
         elif child.tag == 'data':
-            for tile in child:
-                if tile.tag == 'tile':
-                    add_tile(int(tile.get('gid')))
+            encoding = child.get('encoding')
+            if encoding == 'base64':
+                data = base64.b64decode(child.text)
+                for gid in struct.unpack('%dI' % (len(data) / 4), data):
+                    add_tile(gid)
                     tx += 1
                     if tx >= cols:
                         tx = 0
                         ty += 1
+            else:
+                for tile in child:
+                    if tile.tag == 'tile':
+                        add_tile(int(tile.get('gid')))
+                        tx += 1
+                        if tx >= cols:
+                            tx = 0
+                            ty += 1
 
     if layer.name == 'Collision':
         tm.layers.remove(layer)
