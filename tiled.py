@@ -116,7 +116,16 @@ def parse_layer(tm, elem, tilesets):
         tm.layers.remove(layer)
         for i in range(len(layer.images)):
             if layer.images[i]:
-                tm.tiles[i].walkable = False
+                try:
+                    collision_type = layer.images[i].properties['Collision']
+                    if collision_type == 'All':
+                        tm.tiles[i].walkable = False
+                    elif collision_type == 'Animal':
+                        tm.tiles[i].walkable_animal = False
+                    elif collision_type == 'Villager':
+                        tm.tiles[i].walkable_villager = False
+                except AttributeError:
+                    pass
 
 def parse_object_group(tm, elem):
     layer = tilemap.TilemapObjectLayer(elem.get('name'))

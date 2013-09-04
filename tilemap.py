@@ -11,11 +11,16 @@ class Tile(object):
     path_parent = None
     path_current = False
 
+    walkable_animal = True
+    walkable_villager = True
+    _walkable = True
+
     def __init__(self, tx, ty, rect, walkable=True, accept_items=True):
         self.tx = tx
         self.ty = ty
         self.rect = rect
-        self._walkable = walkable
+        if not walkable:
+            self._walkable = walkable
         self.accept_items = accept_items
         self.can_target = True
         self.items = []

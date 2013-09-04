@@ -6,6 +6,11 @@
    <property name="Class" value="Tree"/>
   </properties>
  </tile>
+ <tile id="1">
+  <properties>
+   <property name="Collision" value="All"/>
+  </properties>
+ </tile>
  <tile id="2">
   <properties>
    <property name="Anim" value="Item-Wood.png"/>
@@ -187,6 +192,16 @@
    <property name="BloodDribble" value=""/>
   </properties>
  </tile>
+ <tile id="48">
+  <properties>
+   <property name="Collision" value="Animal"/>
+  </properties>
+ </tile>
+ <tile id="49">
+  <properties>
+   <property name="Collision" value="Villager"/>
+  </properties>
+ </tile>
  <tile id="56">
   <properties>
    <property name="FactoryClass" value="RawMeat"/>
@@ -227,6 +242,12 @@
   <properties>
    <property name="FactoryClass" value="Vegetable"/>
    <property name="Owner" value="Farmer"/>
+  </properties>
+ </tile>
+ <tile id="63">
+  <properties>
+   <property name="FactoryClass" value="Wood"/>
+   <property name="Owner" value="Carpenter"/>
   </properties>
  </tile>
 </tileset>

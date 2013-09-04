@@ -165,6 +165,9 @@ class Sprite(object):
     def on_moved_tile(self):
         pass
 
+    def can_walk(self, tile):
+        return tile.walkable
+
     def move_with_collision(self, tilemap, dx, dy, speed):
         # Slice movement into tile-sized blocks for collision testing
         size = sqrt(dx * dx + dy * dy)
@@ -182,7 +185,7 @@ class Sprite(object):
             if dx:
                 incx = inc * dx
                 tile = tilemap.get_tile_at(self.x + incx, self.y)
-                if tile.walkable:
+                if self.can_walk(tile):
                     self.x += incx
                     did_move = True
                 else:
@@ -196,7 +199,7 @@ class Sprite(object):
             if dy:
                 incy = inc * dy
                 tile = tilemap.get_tile_at(self.x, self.y + incy)
-                if tile.walkable:
+                if self.can_walk(tile):
                     self.y += incy
                     did_move = True
                 else:
@@ -482,6 +485,9 @@ class Character(Sprite):
 class Animal(Character):
     walk_speed = 50
 
+    def can_walk(self, tile):
+        return tile.walkable and tile.walkable_animal
+
     def update_animal_movement(self):
         if not self.path:
             if self.cooldown > 0:
@@ -496,6 +502,11 @@ class Animal(Character):
 
 class Villager(Character):
     walk_speed = 50
+
+    def can_walk(self, tile):
+        if not tile.walkable_villager:
+            return False
+        return tile.walkable and tile.walkable_villager
 
     def update_villager_movement(self):
         if not self.path:
@@ -1161,7 +1172,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
