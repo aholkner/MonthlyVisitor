@@ -488,19 +488,32 @@ class Player(Character):
             self.eating_villager = False
             self.add_food_motive(1.0)
 
-        if self.target_item:
-            target_item = self.target_item
-            self.target_item = None
-            target_item.on_player_interact(tile)
-        else:
-            # Check if we arrived on an animal
-            for animal in animals:
-                if distance(self, animal) < self.distance_player_pickup_animal:
+        # Check if we arrived on an animal
+        for animal in animals:
+            if distance(self, animal) < self.distance_player_pickup_animal:
+                if animal.snared:
+                    # Remove the snare
+                    for item in tile.items:
+                        if item is self.target_item:
+                            self.target_item = None
+                        if isinstance(item, Snare):
+                            item.destroy()
+
+                if not self.target_item:
+                    # Only pick up the animal if it was snared and we were targetting the snare,
+                    # or we weren't targetting anything.
                     item = animal.item_cls(animal.item_cls.get_default_anim(), 0, 0)
                     inventory.add_item(item)
                     tilemap.remove_sprite(animal)
                     animals.remove(animal)
                     return
+
+        # Normal pick_up
+        if self.target_item:
+            target_item = self.target_item
+            self.target_item = None
+            target_item.on_player_interact(tile)
+
 
 class Animal(Character):
     walk_speed = 50
@@ -509,6 +522,10 @@ class Animal(Character):
     run_cooldown = 0
     run_cooldown_time = 1.5 # How long to run before exhaustion
     danger_radius = 100
+
+    snare_attract_radius = 128
+    snare_catch_radius = 8
+    snared = False
 
     def can_walk(self, tile):
         return tile.walkable and tile.walkable_animal
@@ -540,13 +557,27 @@ class Animal(Character):
 
                 # Reset exhaustion
                 self.run_cooldown = self.run_cooldown_time
-
-                dx = random.randrange(-4, 4) * 32
-                dy = random.randrange(-4, 4) * 32
-                self.wait(random.randrange(1, 8))
-            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+                
+                # Check for nearby snares
+                for snare in snares:
+                    if distance(snare, self) < self.snare_catch_radius:
+                        self.snared = True
+                    elif distance(snare, self) < self.snare_attract_radius:
+                        self.running = False
+                        self.path = [tilemap.get_tile_at(snare.x, snare.y)]
+                
+                # Random walk
+                if not self.path and not self.snared:
+                    dx = random.randrange(-4, 4) * 32
+                    dy = random.randrange(-4, 4) * 32
+                    self.wait(random.randrange(1, 8))
+                    self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
             
-        self.update_walk_target_movement()
+        if self.snared:
+            self.anim = self.get_anim()
+        else:
+            self.update_walk_target_movement()
+
 
     def on_collide(self, tile):
         if self.running:
@@ -739,7 +770,7 @@ class Fence(Item):
         self.update_fence_and_adjacent()
 
     def on_dropped(self, tile):
-        super(Fence, self).on_dropped()
+        super(Fence, self).on_dropped(tile)
         self.update_fence_and_adjacent()
 
     def update_fence_and_adjacent(self):
@@ -807,6 +838,26 @@ class Steel(Item):
     pass
 
 @spawn
+class Grass(Item):
+    pass
+
+@spawn
+class Rope(Item):
+    pass
+
+@spawn
+class Snare(Item):
+    def on_dropped(self, tile):
+        super(Snare, self).on_dropped(tile)
+        snares.append(self)
+
+    def on_pick_up(self):
+        try:
+            snares.remove(self)
+        except ValueError:
+            pass
+
+@spawn
 class Chicken(Item):
     food_wolf = 0.3
 
@@ -864,8 +915,8 @@ recipes = [
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat'),
     Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat'),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
-    #Recipe(RabbitSnare)
-    #Recipe(String
+    Recipe(Snare, {Rope: 2, Vegetable: 1}),
+    Recipe(Rope, {Grass: 3}),
     #Recipe(Grass Suit
     #Recipe(FishingRod)
 
@@ -1260,6 +1311,7 @@ player = Player(player_anims, 0, 0)
 villagers = []
 animals = []
 waypoints = []
+snares = []
 tilemap.add_sprite(player)
 inventory = Inventory()
 
