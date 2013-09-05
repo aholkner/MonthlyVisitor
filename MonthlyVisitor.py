@@ -238,7 +238,7 @@ class Character(Sprite):
     
     running = False
     walk_speed = 200
-    run_speed = 400
+    run_speed = 220
     facing = 'down'
     action = 'idle'
     cooldown = 0
@@ -246,12 +246,12 @@ class Character(Sprite):
     is_wolf = False
     is_dying = False
     motive_food = 1.0
-    motive_food_trigger = 0.5
+    motive_food_trigger = 0.8
     max_tilemap_path_size = 500
     distance_player_pickup_animal = 24
 
     distance_wolf_villager_search = GAME_WIDTH * 1.5
-    distance_wolf_villager_attack = 16
+    distance_wolf_villager_attack = 32
     target_villager = None
     eating_villager = False
     current_tile = None
@@ -261,7 +261,7 @@ class Character(Sprite):
         super(Character, self).__init__(self.get_anim(), x, y)
         self.path = None
         self.target_item = None
-
+        
     def wait(self, time):
         self.cooldown = max(self.cooldown, time)
 
@@ -458,6 +458,13 @@ class Character(Sprite):
                         self.target_villager = villager
                         return
 
+        if not self.path:
+            # Random walk
+            dx = random.randrange(-3, 3) * 32
+            dy = random.randrange(-3, 3) * 32
+            self.wait(random.randrange(1, 2))
+            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+
     def get_drop_tile(self):
         tile = tilemap.get_tile_at(self.x, self.y)
         if not tile.items:
@@ -496,10 +503,16 @@ class Player(Character):
     def start_wolf(self):
         self.is_wolf = True
         self.path = None
+        self.running = True
+        self.action = 'idle'
+        self.anim = self.get_anim()
 
     def end_wolf(self):
         self.is_wolf = False
         self.path = None
+        self.running = False
+        self.action = 'idle'
+        self.anim = self.get_anim()
     
     def on_arrive(self, tile):
         self.action = 'idle'
@@ -1475,9 +1488,8 @@ class Game(bacon.Game):
         # AI
         for animal in animals:
             animal.update_animal_movement()
-        if not self.full_moon:
-            for villager in villagers:
-                villager.update_villager_movement()
+        for villager in villagers:
+            villager.update_villager_movement()
 
         if not player.is_dying:
             if player.is_wolf:
