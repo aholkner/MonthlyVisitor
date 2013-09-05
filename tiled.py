@@ -136,7 +136,9 @@ def parse_object_group(tm, elem):
             type = object.get('type')
             x = int(object.get('x'))
             y = int(object.get('y'))
-            layer.objects.append(tilemap.TilemapObject(name, type, x, y))
+            width = int(object.get('width', 0))
+            height = int(object.get('height', 0))
+            layer.objects.append(tilemap.TilemapObject(name, type, x, y, width, height))
 
 def parse(tmx_file):
     base_dir = os.path.dirname(tmx_file)

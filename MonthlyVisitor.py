@@ -761,6 +761,24 @@ class TreeStump(Item):
     can_pick_up = False
     
 @spawn
+class BerryPlant(Item):
+    name = 'Berry Plant'
+    can_pick_up = False
+
+    def on_consumed_in_recipe(self):
+        self.anim = object_anims['BerryPlantEmpty']
+        self.__class__ = BerryPlantEmpty
+
+@spawn
+class BerryPlantEmpty(Item):
+    name = 'Berry Plant'
+    can_pick_up = False
+
+@spawn
+class Berries(Item):
+    food_human = 0.05
+
+@spawn
 class Wood(Item):
     name = 'Wood'
 
@@ -964,6 +982,7 @@ recipes = [
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
+    Recipe(Berries, {BerryPlant: 1}, 'Pick berries'),
     #Recipe(Grass Suit
     #Recipe(FishingRod)
 
@@ -1354,6 +1373,10 @@ for tileset in tilemap.tilesets:
 Fence.fence_anims[''] = Fence.get_default_anim()
 StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 
+class Tutorial(object):
+    def __init__(self, text, rect):
+        self.text = text
+        self.rect = rect
 
 player = Player(player_anims, 0, 0)
 villagers = []
@@ -1362,6 +1385,7 @@ waypoints = []
 snares = []
 tilemap.add_sprite(player)
 inventory = Inventory()
+tutorials = []
 
 
 for layer in tilemap.layers:
@@ -1395,16 +1419,18 @@ camera = Camera()
 
 
 for object_layer in tilemap.object_layers:
-    for object in object_layer.objects:
-        if object.name == 'PlayerStart':
-            player.x = object.x
-            player.y = object.y
+    for obj in object_layer.objects:
+        if obj.name == 'PlayerStart':
+            player.x = obj.x
+            player.y = obj.y
             tilemap.update_sprite_position(player)
-        elif object.name == 'Villager':
-            villager = Villager(player_anims, object.x, object.y)
-            villager.name = object.type
+        elif obj.name == 'Villager':
+            villager = Villager(player_anims, obj.x, obj.y)
+            villager.name = obj.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
+        elif obj.name == 'Tutorial':
+            tutorials.append(Tutorial(obj.type, Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height)))
 
 class GameStartScreen(bacon.Game):
     def on_tick(self):
@@ -1456,6 +1482,7 @@ class Game(bacon.Game):
     def __init__(self):
         self.menu = None
         self.screen = GameStartScreen()
+        self.tutorial = None
 
     def start(self):
         self.lunar_cycle = 0.0
@@ -1562,6 +1589,8 @@ class Game(bacon.Game):
             bacon.fill_rect(0, 0, GAME_WIDTH, self.curtain * 60)
             bacon.fill_rect(0, GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT - self.curtain * 60)
 
+        self.draw_tutorial()
+
         bacon.set_color(1, 1, 1, 1)
         if player.motive_food < player.motive_food_trigger:
             bacon.set_color(1, 0, 0, 1)
@@ -1573,6 +1602,28 @@ class Game(bacon.Game):
 
         if self.menu:
             self.menu.draw()
+
+    def draw_tutorial(self):
+        tutorial = None
+        for t in tutorials:
+            if t.rect.contains(player.x, player.y):
+                tutorial = t
+
+        if tutorial != self.tutorial:
+            self.tutorial = tutorial
+            if tutorial:
+                style = bacon.Style(font_ui)
+                runs = [bacon.GlyphRun(style, tutorial.text)]
+                tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 16, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
+
+        if tutorial:
+            bacon.set_color(0, 0, 0, 0.8)
+            g = tutorial.glyph_layout
+
+            r = Rect(g.x + g.width / 2- g.content_width / 2, g.y, g.x + g.width / 2 + g.content_width / 2, g.y - g.content_height)
+            r.fill()
+            bacon.set_color(1, 1, 1, 1)
+            bacon.draw_glyph_layout(tutorial.glyph_layout)
 
 
     def on_key(self, key, pressed):
