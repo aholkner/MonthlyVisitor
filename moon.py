@@ -41,23 +41,24 @@ shader = bacon.Shader(vertex_source=
     {
         // Standard vertex color and texture
         vec4 color = v_Color * texture2D(g_Texture0, v_TexCoord0);
+        color = pow(color, vec4(2.2));
 
         vec3 normal = vec3((v_Position - center) / radius, 0.0);
-        normal.z = 1.0 - sqrt(normal.x * normal.x + normal.y * normal.y);
+        normal.z = 1.0 - (normal.x * normal.x + normal.y * normal.y);
 
         float angle = g_Time;
-        vec3 light;
-        light.x = cos(angle);
-        light.y = 0.0;
-        light.z = sin(angle);
+        vec3 light = vec3(cos(angle), 0.0, sin(angle));
         
-        // Direct diffuse
+         // Direct diffuse
         float illum = max(0.0, dot(light, normal));
         
-        // Rim
-        illum += pow(max(0.0, -light.z), 5.0) * pow(1.0 - normal.z, 10.0);
+        // Ambient
+        illum += 0.005;
 
-        gl_FragColor = color * clamp(illum, 0.0, 1.0);
+        // Rim
+        illum += pow(max(0.0, -light.z), 10.0) * pow(1.0 - normal.z, 10.0);
+
+        gl_FragColor = pow(color * clamp(illum, 0.0, 1.0), vec4(0.45));
     }
     """)
 
@@ -70,7 +71,7 @@ class Moon(object):
 
     def draw(self):
         uniform_center.value = (self.x, self.y)
-        uniform_radius.value = 240
+        uniform_radius.value = 250
         bacon.set_shader(shader)
         bacon.draw_image(moon_image, 
             self.x - moon_image.width / 2,
