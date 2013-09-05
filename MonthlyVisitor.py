@@ -252,9 +252,7 @@ class Character(Sprite):
 
     distance_wolf_villager_search = GAME_WIDTH * 1.5
     distance_wolf_villager_attack = 16
-    distance_wolf_waypoint_search = GAME_WIDTH * 1.5
     target_villager = None
-    target_waypoint_index = -1
     eating_villager = False
     current_tile = None
 
@@ -298,7 +296,18 @@ class Character(Sprite):
 
     def walk_to(self, x, y):
         tile = tilemap.get_tile_at(x, y)
-        return self.walk_to_tile(tile)
+        return self.walk_to_tile(tile)    
+
+    def walk_to_distant_object(self, obj):
+        if distance(obj, self) > GAME_WIDTH * 0.5:
+            dx = obj.x - self.x
+            dy = obj.y - self.y
+            m = GAME_WIDTH * 0.25 / sqrt(dx * dx + dy * dy)
+            dx *= m
+            dy *= m
+            return self.walk_to(self.x + dx, self.y + dy)
+        else:
+            return self.walk_to(obj.x, obj.y)
 
     def walk_to_waypoint(self, target_index=None):
         waypoints.sort(key=lambda v:distance(v, self))
@@ -306,12 +315,9 @@ class Character(Sprite):
             if target_index is not None and waypoint.index != target_index:
                 continue
             
-            if distance(self, waypoint) < self.distance_wolf_waypoint_search:
-                if self.walk_to(waypoint.x, waypoint.y):
-                    self.target_waypoint_index = waypoint.index
-                    return True
+            if self.walk_to_distant_object(waypoint):
+                return True
                 
-
     def update_player_movement(self):
         dx = 0
         dy = 0
@@ -443,9 +449,14 @@ class Character(Sprite):
 
                 # Search for nearby items that are food -- note that the returned path is not optimal, but
                 # looks more organic anyway
-                if not self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search()):
-                    # Nothing nearby, waypath to town
-                    self.walk_to_waypoint()
+                if self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search()):
+                    return
+
+                # Walk towards nearest villager over multiple screens
+                for villager in villagers:
+                    if self.walk_to_distant_object(villagers[0]):
+                        self.target_villager = villager
+                        return
 
     def get_drop_tile(self):
         tile = tilemap.get_tile_at(self.x, self.y)
@@ -493,11 +504,6 @@ class Player(Character):
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
             self.eating_villager = False
             self.add_food_motive(1.0)
-            self.target_waypoint_index = -1
-
-        if self.target_waypoint_index > 1:
-            # Path to next waypoint
-            self.walk_to_waypoint(self.target_waypoint_index - 1)
 
         # Check if we arrived on an animal
         for animal in animals:

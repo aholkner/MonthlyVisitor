@@ -32574,7 +32574,6 @@
   <object name="Waypoint" gid="794" x="1080" y="1332"/>
   <object name="Waypoint" gid="794" x="1222" y="730"/>
   <object name="Waypoint" gid="794" x="901" y="1080"/>
-  <object name="Waypoint" type="2" gid="794" x="527" y="1205"/>
  </objectgroup>
  <layer name="Collision" width="50" height="50" opacity="0.6">
   <properties>
@@ -37001,7 +37000,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="775"/>
+   <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
