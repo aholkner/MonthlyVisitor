@@ -117,6 +117,11 @@
    <property name="Class" value="Iron"/>
   </properties>
  </tile>
+ <tile id="25">
+  <properties>
+   <property name="Waypoint" value="1"/>
+  </properties>
+ </tile>
  <tile id="26">
   <properties>
    <property name="Anim" value="BoneSkull"/>

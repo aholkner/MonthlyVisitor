@@ -121,10 +121,10 @@ def dot(ax, ay, bx, by):
     return ax * bx + ay * by
 
 class Waypoint(object):
-    def __init__(self, x, y, index):
+    index = 0
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.index = index
 
 class Sprite(object):
     looping = True
@@ -424,7 +424,7 @@ class Character(Sprite):
             # Small bite
             self.add_food_motive(0.1)
             spawn_blood(self.x, self.y)
-            self.walk_to_waypoint(1)
+            self.walk_to_waypoint()
             return
 
         if self.cooldown > 0:
@@ -1374,6 +1374,10 @@ for layer in tilemap.layers:
                     owner = image.properties.get('Owner')
                     cooldown = int(image.properties.get('Cooldown', 5))
                     factories.append(Factory(tile, factory_class, owner, cooldown))
+
+                if image.properties.get('Waypoint'):
+                    waypoint = Waypoint(tile.rect.center_x, tile.rect.center_y)
+                    waypoints.append(waypoint)
     elif layer.name == 'Blood':
         blood_layer = layer
 camera = Camera()
@@ -1390,10 +1394,6 @@ for object_layer in tilemap.object_layers:
             villager.name = object.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
-        elif object.name == 'Waypoint':
-            waypoint = Waypoint(object.x, object.y, int(object.type or 1))
-            waypoints.append(waypoint)
-
 
 class GameStartScreen(bacon.Game):
     def on_tick(self):
