@@ -1307,7 +1307,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
@@ -1382,6 +1382,25 @@ for object_layer in tilemap.object_layers:
             waypoints.append(waypoint)
 
 
+class GameStartScreen(bacon.Game):
+    def on_tick(self):
+        bacon.clear(0, 0, 0, 1)
+        bacon.set_color(1, 0, 0, 1)
+        bacon.draw_string(font_ui, 'Monthly Visitor', 
+                          0, 0, GAME_WIDTH, GAME_HEIGHT,
+                          align = bacon.Alignment.center,
+                          vertical_align = bacon.VerticalAlignment.center)
+
+        bacon.set_color(1, 1, 1, 1)
+        bacon.draw_string(font_ui, 'Click to start', 
+                          0, int(GAME_HEIGHT * 0.75), GAME_WIDTH,
+                          align = bacon.Alignment.center,
+                          vertical_align = bacon.VerticalAlignment.center)
+
+    def on_mouse_button(self, button, pressed):
+        game.screen = None
+        game.start()
+
 class GameOverScreen(bacon.Game):
     def __init__(self):
         pass
@@ -1412,13 +1431,15 @@ lunar_names = [
 class Game(bacon.Game):
     def __init__(self):
         self.menu = None
-        self.screen = None
+        self.screen = GameStartScreen()
 
+    def start(self):
         self.lunar_cycle = 0.0
         self.full_moon_time = 0.0
         self.full_moon = False
 
         self.curtain = 0.0
+        player.motive_food = 1.0
 
     @property
     def lunar_name(self):
@@ -1551,6 +1572,7 @@ class Game(bacon.Game):
     def on_mouse_button(self, button, pressed):
         if self.screen:
             self.screen.on_mouse_button(button, pressed)
+            return
 
         if self.menu:
             self.menu.on_mouse_button(button, pressed)
