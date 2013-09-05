@@ -493,6 +493,11 @@ class Character(Sprite):
 
     
 class Player(Character):
+    def start_wolf(self):
+        self.is_wolf = True
+
+    def end_wolf(self):
+        self.is_wolf = False
     
     def on_arrive(self, tile):
         self.action = 'idle'
@@ -1388,21 +1393,61 @@ class GameOverScreen(bacon.Game):
                           vertical_align = bacon.VerticalAlignment.center)
 
                          
+FULL_MOON_TIME = 30.0
+MONTH_TIME = 120.0
+
+lunar_names = [
+    'Waxing Gibbous',
+    'First Quarter',
+    'Waxing Crescent',
+    'New Moon',
+    'Waning Crescent',
+    'Third Quarter',
+    'Waning Gibbous',
+    'Waning Gibbous',
+]
 
 class Game(bacon.Game):
     def __init__(self):
         self.menu = None
         self.screen = None
 
+        self.lunar_cycle = 0.0
+        self.full_moon_time = 0.0
+        self.full_moon = False
+
+    @property
+    def lunar_name(self):
+        if self.lunar_cycle == 0.0:
+            return 'FULL MOON'
+        else:
+            return lunar_names[int(self.lunar_cycle * 8.0)]
+
     def on_tick(self):
         if self.screen:
             self.screen.on_tick()
             return
 
+        # Lunar cycle
+        if self.full_moon:
+            self.full_moon_time -= bacon.timestep
+            if self.full_moon_time < 0.0:
+                self.full_moon = False
+                player.end_wolf()
+        else:
+            self.lunar_cycle += bacon.timestep / MONTH_TIME
+            if self.lunar_cycle >= 1.0:
+                self.lunar_cycle = 0.0
+                self.full_moon_time = FULL_MOON_TIME
+                self.full_moon = True
+                player.start_wolf()
+
+        # AI
         for animal in animals:
             animal.update_animal_movement()
-        for villager in villagers:
-            villager.update_villager_movement()
+        if not self.full_moon:
+            for villager in villagers:
+                villager.update_villager_movement()
 
         if not player.is_dying:
             if player.is_wolf:
@@ -1411,18 +1456,21 @@ class Game(bacon.Game):
                 player.update_player_motives()
                 player.update_player_movement()
 
-                for factory in factories:
-                    factory.update()
+                if not self.full_moon:
+                    for factory in factories:
+                        factory.update()
         
             if player.motive_food <= 0:
                 player.die()
 
         player.update_walk_target_movement()
 
+        # Camera
         camera.x = int(player.x)
         camera.y = int(player.y)
         camera.clamp_to_bounds(tilemap.get_bounds())
 
+        # Rendering
         bacon.clear(0.8, 0.7, 0.6, 1.0)
         bacon.push_transform()
         camera.apply()
@@ -1463,6 +1511,10 @@ class Game(bacon.Game):
             bacon.set_color(0, 0, 0, 1)
             bacon.draw_string(font_ui, 'WOLF', 0, 32)
 
+        bacon.set_color(1, 1, 1, 1)
+        bacon.draw_string(font_ui, 'Lunar: %f' % self.lunar_cycle, GAME_WIDTH, 64, align = bacon.Alignment.right)
+        bacon.draw_string(font_ui, self.lunar_name, GAME_WIDTH, 96, align = bacon.Alignment.right)
+
         if self.menu:
             self.menu.draw()
 
@@ -1478,6 +1530,10 @@ class Game(bacon.Game):
                 player.motive_food -= 0.2
             if pressed and key == bacon.Keys.plus:
                 player.motive_food += 0.2
+            if pressed and key == bacon.Keys.right_bracket:
+                self.lunar_cycle += 0.25
+            if pressed and key == bacon.Keys.left_bracket:
+                self.lunar_cycle -= 0.25
 
     def on_mouse_button(self, button, pressed):
         if self.screen:
