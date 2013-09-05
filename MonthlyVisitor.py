@@ -10,6 +10,7 @@ import bacon
 import tiled
 import spriter
 from common import Rect
+import moon
 
 GAME_WIDTH = 800
 GAME_HEIGHT = 500
@@ -1193,7 +1194,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
@@ -1267,6 +1268,17 @@ for object_layer in tilemap.object_layers:
             waypoints.append(waypoint)
 
 
+class StartScreen(bacon.Game):
+    def __init__(self):
+        self.moon = moon.Moon()
+        self.moon.x = GAME_WIDTH / 2
+        self.moon.y = GAME_HEIGHT / 2
+
+    def on_tick(self):
+        bacon.clear(0, 0, 0, 1)
+        bacon.set_color(1, 1, 1, 1)
+        self.moon.draw()
+
 class GameOverScreen(bacon.Game):
     def __init__(self):
         pass
@@ -1284,7 +1296,7 @@ class GameOverScreen(bacon.Game):
 class Game(bacon.Game):
     def __init__(self):
         self.menu = None
-        self.screen = None
+        self.screen = StartScreen()
 
     def on_tick(self):
         if self.screen:
