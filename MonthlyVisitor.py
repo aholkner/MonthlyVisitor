@@ -117,6 +117,9 @@ def distance(a, b):
     dy = a.y - b.y
     return sqrt(dx * dx + dy * dy)
 
+def dot(ax, ay, bx, by):
+    return ax * bx + ay * by
+
 class Waypoint(object):
     def __init__(self, x, y):
         self.x = x
@@ -231,8 +234,10 @@ class Sprite(object):
 
 class Character(Sprite):
     name = None
-
+    
+    running = False
     walk_speed = 200
+    run_speed = 400
     facing = 'down'
     action = 'idle'
     cooldown = 0
@@ -317,7 +322,7 @@ class Character(Sprite):
 
         if dx or dy:
             self.update_facing(dx, dy)
-            self.move_with_collision(tilemap, dx, dy, self.walk_speed)
+            self.move_with_collision(tilemap, dx, dy, self.run_speed if self.running else self.walk_speed)
             self.path = None
             self.target_item = None
             self.action = 'walk'
@@ -332,7 +337,7 @@ class Character(Sprite):
         dx = target_tile.rect.center_x - self.x
         dy = target_tile.rect.center_y - self.y
         self.update_facing(dx, dy)
-        if self.move_with_collision(tilemap, dx, dy, self.walk_speed):
+        if self.move_with_collision(tilemap, dx, dy, self.run_speed if self.running else self.walk_speed):
             self.action = 'walk'
         else:
             # Didn't move, so we've arrived at this path node
@@ -499,24 +504,58 @@ class Player(Character):
 
 class Animal(Character):
     walk_speed = 50
+    run_speed = 110
+
+    run_cooldown = 0
+    run_cooldown_time = 1.5 # How long to run before exhaustion
+    danger_radius = 100
 
     def can_walk(self, tile):
         return tile.walkable and tile.walkable_animal
 
     def update_animal_movement(self):
+        if self.running:
+            self.run_cooldown -= bacon.timestep
+
         if not self.path:
-            if self.cooldown > 0:
-                self.cooldown -= bacon.timestep
-                return
-            dx = random.randrange(-4, 4) * 32
-            dy = random.randrange(-4, 4) * 32
+            if distance(self, player) < self.danger_radius and self.run_cooldown > 0:
+                self.running = True
+                self.run_cooldown -= bacon.timestep
+                dx = random.randrange(1, 5) * 32
+                dy = random.randrange(0, 5) * 32
+                if player.x > self.x:
+                    dx = -dx
+                if player.y > self.y:
+                    dy = -dy
+                self.wait(random.randrange(1, 4) / 4.0)
+            else:
+                if self.running:
+                    self.running = False
+                    self.wait(2)
+                    return
+
+                if self.cooldown > 0:
+                    self.cooldown -= bacon.timestep
+                    return
+
+                # Reset exhaustion
+                self.run_cooldown = self.run_cooldown_time
+
+                dx = random.randrange(-4, 4) * 32
+                dy = random.randrange(-4, 4) * 32
+                self.wait(random.randrange(1, 8))
             self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
-            self.wait(random.randrange(1, 8))
+            
         self.update_walk_target_movement()
+
+    def on_collide(self, tile):
+        if self.running:
+            self.cooldown = 0
 
 
 class Villager(Character):
     walk_speed = 50
+    run_speed = 50
 
     def can_walk(self, tile):
         if not tile.walkable_villager:
