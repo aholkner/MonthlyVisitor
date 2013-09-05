@@ -425,10 +425,13 @@ class Character(Sprite):
             self.add_food_motive(0.1)
             spawn_blood(self.x, self.y)
             self.walk_to_waypoint()
+            self.wait(0.8)
             return
 
         if self.cooldown > 0:
             self.cooldown -= bacon.timestep
+            self.action = 'idle'
+            self.anim = self.get_anim()
             return
 
         # If we're standing on food, eat it
@@ -464,6 +467,8 @@ class Character(Sprite):
             dy = random.randrange(-3, 3) * 32
             self.wait(random.randrange(1, 2))
             self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+
+        self.update_walk_target_movement()
 
     def get_drop_tile(self):
         tile = tilemap.get_tile_at(self.x, self.y)
@@ -506,6 +511,8 @@ class Player(Character):
         self.running = True
         self.action = 'idle'
         self.anim = self.get_anim()
+        for item in inventory.items[:]:
+            inventory.drop(item, self.get_drop_tile())
 
     def end_wolf(self):
         self.is_wolf = False
@@ -513,6 +520,8 @@ class Player(Character):
         self.running = False
         self.action = 'idle'
         self.anim = self.get_anim()
+        if self.eating_villager:
+            self.on_arrive(tilemap.get_tile_at(self.x, self.y))
     
     def on_arrive(self, tile):
         self.action = 'idle'
@@ -524,6 +533,7 @@ class Player(Character):
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
             self.eating_villager = False
             self.add_food_motive(1.0)
+            self.wait(2.5)
 
         # Check if we arrived on an animal
         for animal in animals:
@@ -1251,7 +1261,8 @@ class Inventory(object):
 
     def drop(self, item, tile):
         self.items.remove(item)
-        item.on_dropped(tile)
+        if tile:
+            item.on_dropped(tile)
 
     def remove(self, item):
         self.items.remove(item)
@@ -1497,6 +1508,7 @@ class Game(bacon.Game):
             else:
                 player.update_player_motives()
                 player.update_player_movement()
+                player.update_walk_target_movement()
 
                 if not self.full_moon:
                     for factory in factories:
@@ -1505,7 +1517,6 @@ class Game(bacon.Game):
             if player.motive_food <= 0:
                 player.die()
 
-        player.update_walk_target_movement()
 
         # Camera
         camera.x = int(player.x)
