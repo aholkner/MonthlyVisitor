@@ -121,9 +121,10 @@ def dot(ax, ay, bx, by):
     return ax * bx + ay * by
 
 class Waypoint(object):
-    def __init__(self, x, y):
+    def __init__(self, x, y, index):
         self.x = x
         self.y = y
+        self.index = index
 
 class Sprite(object):
     looping = True
@@ -299,12 +300,15 @@ class Character(Sprite):
         tile = tilemap.get_tile_at(x, y)
         return self.walk_to_tile(tile)
 
-    def walk_to_waypoint(self, target_index):
-        self.target_waypoint_index = target_index
+    def walk_to_waypoint(self, target_index=None):
         waypoints.sort(key=lambda v:distance(v, self))
         for waypoint in waypoints:
+            if target_index is not None and waypoint.index != target_index:
+                continue
+            
             if distance(self, waypoint) < self.distance_wolf_waypoint_search:
                 if self.walk_to(waypoint.x, waypoint.y):
+                    self.target_waypoint_index = waypoint.index
                     return True
                 
 
@@ -439,7 +443,9 @@ class Character(Sprite):
 
                 # Search for nearby items that are food -- note that the returned path is not optimal, but
                 # looks more organic anyway
-                self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search())
+                if not self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search()):
+                    # Nothing nearby, waypath to town
+                    self.walk_to_waypoint()
 
     def get_drop_tile(self):
         tile = tilemap.get_tile_at(self.x, self.y)
@@ -487,6 +493,11 @@ class Player(Character):
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
             self.eating_villager = False
             self.add_food_motive(1.0)
+            self.target_waypoint_index = -1
+
+        if self.target_waypoint_index > 1:
+            # Path to next waypoint
+            self.walk_to_waypoint(self.target_waypoint_index - 1)
 
         # Check if we arrived on an animal
         for animal in animals:
@@ -1354,7 +1365,7 @@ for object_layer in tilemap.object_layers:
             villagers.append(villager)
             tilemap.add_sprite(villager)
         elif object.name == 'Waypoint':
-            waypoint = Waypoint(object.x, object.y)
+            waypoint = Waypoint(object.x, object.y, int(object.type or 1))
             waypoints.append(waypoint)
 
 

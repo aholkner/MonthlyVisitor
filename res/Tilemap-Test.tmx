@@ -32569,11 +32569,12 @@
   </data>
  </layer>
  <objectgroup name="Objects" width="50" height="50">
-  <object name="PlayerStart" gid="641" x="1148" y="1041"/>
+  <object name="PlayerStart" gid="641" x="431" y="1245"/>
   <object name="Villager" type="Farmer" gid="793" x="1239" y="1105"/>
   <object name="Waypoint" gid="794" x="1080" y="1332"/>
   <object name="Waypoint" gid="794" x="1222" y="730"/>
   <object name="Waypoint" gid="794" x="901" y="1080"/>
+  <object name="Waypoint" type="2" gid="794" x="527" y="1205"/>
  </objectgroup>
  <layer name="Collision" width="50" height="50" opacity="0.6">
   <properties>
@@ -36272,7 +36273,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="775"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -36812,7 +36813,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="775"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -37000,6 +37001,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
+   <tile gid="775"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
@@ -37217,8 +37219,7 @@
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
-   <tile gid="0"/>
-   <tile gid="0"/>
+   <tile gid="775"/>
    <tile gid="0"/>
    <tile gid="0"/>
    <tile gid="0"/>
