@@ -9,7 +9,7 @@ import random
 import bacon
 import tiled
 import spriter
-from common import Rect
+from common import Rect, tween, update_tweens
 
 GAME_WIDTH = 800
 GAME_HEIGHT = 500
@@ -495,9 +495,11 @@ class Character(Sprite):
 class Player(Character):
     def start_wolf(self):
         self.is_wolf = True
+        self.path = None
 
     def end_wolf(self):
         self.is_wolf = False
+        self.path = None
     
     def on_arrive(self, tile):
         self.action = 'idle'
@@ -1416,6 +1418,8 @@ class Game(bacon.Game):
         self.full_moon_time = 0.0
         self.full_moon = False
 
+        self.curtain = 0.0
+
     @property
     def lunar_name(self):
         if self.lunar_cycle == 0.0:
@@ -1424,6 +1428,8 @@ class Game(bacon.Game):
             return lunar_names[int(self.lunar_cycle * 8.0)]
 
     def on_tick(self):
+        update_tweens()
+
         if self.screen:
             self.screen.on_tick()
             return
@@ -1434,6 +1440,7 @@ class Game(bacon.Game):
             if self.full_moon_time < 0.0:
                 self.full_moon = False
                 player.end_wolf()
+                tween(self, 'curtain', 0.0, 0.3)
         else:
             self.lunar_cycle += bacon.timestep / MONTH_TIME
             if self.lunar_cycle >= 1.0:
@@ -1441,6 +1448,8 @@ class Game(bacon.Game):
                 self.full_moon_time = FULL_MOON_TIME
                 self.full_moon = True
                 player.start_wolf()
+                tween(self, 'curtain', 1.0, 0.3)
+                self.menu = None
 
         # AI
         for animal in animals:
@@ -1501,15 +1510,18 @@ class Game(bacon.Game):
         
         
     def draw_ui(self):
-        bacon.set_color(0, 0, 0, 1)
+        bacon.set_color(1, 1, 1, 1)
+        inventory.draw()
+        
+        if self.curtain:
+            bacon.set_color(0, 0, 0, 1)
+            bacon.fill_rect(0, 0, GAME_WIDTH, self.curtain * 60)
+            bacon.fill_rect(0, GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT - self.curtain * 60)
+
+        bacon.set_color(1, 1, 1, 1)
         if player.motive_food < player.motive_food_trigger:
             bacon.set_color(1, 0, 0, 1)
         bacon.draw_string(font_ui, 'Food level: %d%%' % round(player.motive_food * 100), GAME_WIDTH, 32, align=bacon.Alignment.right)
-        inventory.draw()
-
-        if player.is_wolf:
-            bacon.set_color(0, 0, 0, 1)
-            bacon.draw_string(font_ui, 'WOLF', 0, 32)
 
         bacon.set_color(1, 1, 1, 1)
         bacon.draw_string(font_ui, 'Lunar: %f' % self.lunar_cycle, GAME_WIDTH, 64, align = bacon.Alignment.right)
@@ -1517,6 +1529,7 @@ class Game(bacon.Game):
 
         if self.menu:
             self.menu.draw()
+
 
     def on_key(self, key, pressed):
         if self.screen:

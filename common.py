@@ -34,3 +34,34 @@ class Rect(object):
 
     def fill(self):
         bacon.fill_rect(self.x1, self.y1, self.x2, self.y2)
+
+class Tween(object):
+    def __init__(self, obj, attr, start, end, total_time):
+        self.obj = obj
+        self.attr = attr
+        self.total_time = total_time
+        self.time = 0.0
+        self.start = start
+        self.end = end
+
+    def update(self):
+        self.time += bacon.timestep
+        if self.time >= self.total_time:
+            setattr(self.obj, self.attr, self.end)
+            tweens.remove(self)
+        else:
+            setattr(self.obj, self.attr, self.time / self.total_time * (self.end - self.start) + self.start)
+
+tweens = []
+
+def tween(obj, attr, end_value, time):
+    for tween in tweens:
+        if tween.obj == obj and tween.attr == attr:
+            tweens.remove(tween)
+            break
+    start_value = getattr(obj, attr)
+    tweens.append(Tween(obj, attr, start_value, end_value, time))
+
+def update_tweens():
+    for tween in list(tweens):
+        tween.update()
