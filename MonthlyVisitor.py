@@ -1116,7 +1116,7 @@ def path_arrived(destination):
 
 def path_heuristic_player(destination):
     def func(tile):
-        if not tile.walkable:
+        if not tile.walkable and tile is not destination:
             return 99999
         return abs(destination.tx - tile.tx) + abs(destination.ty - tile.ty) + tile.path_cost
     return func
