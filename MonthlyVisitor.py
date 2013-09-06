@@ -1763,16 +1763,7 @@ class Game(bacon.Game):
     def draw_world(self):
         bacon.set_color(1, 1, 1, 1)
         tilemap.draw(camera.get_bounds())
-
-        if False:
-            for tile in tilemap.tiles:
-                if tile.path_current:
-                    bacon.set_color(0, 0, 1, 1)
-                    tile.rect.fill()
-                elif tile.path_closed:
-                    bacon.set_color(1, 1, 0, 1)
-                    tile.rect.fill()
-        
+                
         bacon.set_color(0, 0, 1, 1)
         tilemap.get_tile_rect(player.x, player.y).draw()
         

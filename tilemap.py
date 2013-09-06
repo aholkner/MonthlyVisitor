@@ -7,9 +7,7 @@ from common import Rect
 
 class Tile(object):
     path_cost = 1
-    path_closed = False
     path_parent = None
-    path_current = False
 
     walkable_animal = True
     walkable_villager = True
@@ -174,16 +172,10 @@ class Tilemap(object):
 
     def get_path(self, start_tile, arrived_func, heuristic_func, max_size):
         # http://stackoverflow.com/questions/4159331/python-speed-up-an-a-star-pathfinding-algorithm
-        for tile in self.tiles:
-            tile.path_parent = None
-            tile.path_closed = False
-            tile.path_open = False
-            tile.path_current = False
         
         def retrace(c):
             path = [c]
             while c.path_parent is not None:
-                c.path_current = True
                 c = c.path_parent
                 path.append(c)
             path.reverse()
@@ -217,18 +209,22 @@ class Tilemap(object):
                 if down and down.walkable:
                     yield self.tiles[i + self.cols + 1]
 
+        closed = set()
+        open_set = set()
         open = []
         open.append((0, start_tile))
+        start_tile.path_parent = None
         while open and max_size >= 0:
             max_size -= 1
             score, current = heapq.heappop(open)
             if arrived_func(current):
                 return retrace(current)
-            current.path_closed = True
+            
+            closed.add(current)
             for tile in candidates(current):
-                if not tile.path_closed and not tile.path_open:
+                if tile not in closed and tile not in open_set:
                     g = heuristic_func(tile)
-                    tile.path_open = True
+                    open_set.add(tile)
                     heapq.heappush(open, (score + g + 1, tile))
                     tile.path_parent = current
         return []
