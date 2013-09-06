@@ -1735,7 +1735,7 @@ class Game(bacon.Game):
                 player.update_wolf_motives()
             else:
                 player.update_player_motives()
-                player.update_player_movement()
+                #player.update_player_movement()
                 player.update_walk_target_movement()
 
                 if not self.full_moon:
