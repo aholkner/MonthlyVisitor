@@ -132,6 +132,7 @@ clothing_anims = dict(
     Wolf = load_clothing_anims('Wolf'),
 )
 default_player_clothing = ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde']
+naked_player_clothing = ['HairBlonde']
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
 
 
@@ -562,6 +563,7 @@ class Character(Sprite):
 
     
 class Player(Character):
+    naked = False
     def start_wolf(self):
         self.is_wolf = True
         self.path = None
@@ -578,7 +580,8 @@ class Player(Character):
         self.running = False
         self.action = 'idle'
         self.update_anim()
-        self.set_clothing(None)
+        self.set_clothing(naked_player_clothing)
+        self.naked = True
         if self.eating_villager:
             self.on_arrive(tilemap.get_tile_at(self.x, self.y))
     
@@ -838,6 +841,10 @@ class Berries(Item):
     food_human = 0.05
 
 @spawn
+class Clothes(Item):
+    pass
+
+@spawn
 class Wood(Item):
     name = 'Wood'
 
@@ -1014,7 +1021,8 @@ class Recipe(object):
         self.outputs = output
         self.inputs = inputs
         self.text = text
-        self.name = output[0].__name__
+        if output:
+            self.name = output[0].__name__
           
     def is_input(self, input):
         return input.__class__ in self.inputs
@@ -1026,6 +1034,23 @@ class Recipe(object):
             if inventory.get_class_count(input) < count:
                 return False
         return True
+
+    def on_craft(self):
+        pass
+
+class ClothesRecipe(Recipe):
+    name = 'Clothes'
+
+    def is_available(self, extra_item):
+        if not super(ClothesRecipe, self).is_available(extra_item):
+            return False
+        if not player.naked:
+            return False
+        return True
+
+    def on_craft(self):
+        player.set_clothing(default_player_clothing)
+        player.naked = False
 
 recipes = [
     Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood'),
@@ -1042,6 +1067,7 @@ recipes = [
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
     Recipe(Berries, {BerryPlant: 1}, 'Pick berries'),
+    ClothesRecipe([], {Clothes: 1}, 'Wear clothes'),
     #Recipe(Grass Suit
     #Recipe(FishingRod)
 
@@ -1408,6 +1434,7 @@ class Inventory(object):
             else:
                 self.drop(self.items[-1], player.get_drop_tile())
 
+        recipe.on_craft()
         self.layout()
 
     def draw(self):
@@ -1768,7 +1795,10 @@ class Game(bacon.Game):
             if pressed and key == bacon.Keys.plus:
                 player.motive_food += 0.2
             if pressed and key == bacon.Keys.right_bracket:
-                self.lunar_cycle += 0.25
+                if self.full_moon:
+                    self.full_moon_time = 0
+                else:
+                    self.lunar_cycle += 0.25
             if pressed and key == bacon.Keys.left_bracket:
                 self.lunar_cycle -= 0.25
 

@@ -207,6 +207,11 @@
    <property name="BloodDribble" value=""/>
   </properties>
  </tile>
+ <tile id="46">
+  <properties>
+   <property name="Class" value="Clothes"/>
+  </properties>
+ </tile>
  <tile id="48">
   <properties>
    <property name="Collision" value="Animal"/>
@@ -215,6 +220,12 @@
  <tile id="49">
   <properties>
    <property name="Collision" value="Villager"/>
+  </properties>
+ </tile>
+ <tile id="55">
+  <properties>
+   <property name="FactoryClass" value="Clothes"/>
+   <property name="Owner" value="Tailor"/>
   </properties>
  </tile>
  <tile id="56">
