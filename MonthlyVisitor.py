@@ -1446,7 +1446,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
@@ -1514,6 +1514,15 @@ for layer in tilemap.layers:
 camera = Camera()
 
 
+villager_clothing = dict(
+    Baker = ['BrownSkirt', 'WhiteShirt'],
+    Butcher = ['BrownShoes', 'GreenPants', 'PurpleJacket', 'Hood'],
+    Tailor = ['BrownShoes', 'BrownSkirt', 'WhiteShirt', 'HairBlonde'],
+    Carpenter = ['MetalBoots', 'BrownSkirt', 'ChainTorso', 'MetalHat'],
+    Blacksmith = ['MetalBoots', 'MetalPants', 'ChainTorso', 'ChainHood'],
+    Farmer = ['GreenPants', 'MetalHat']
+)
+
 for object_layer in tilemap.object_layers:
     for obj in object_layer.objects:
         if obj.name == 'PlayerStart':
@@ -1521,7 +1530,7 @@ for object_layer in tilemap.object_layers:
             player.y = obj.y
             tilemap.update_sprite_position(player)
         elif obj.name == 'Villager':
-            villager = Villager(clothing_anims['Body'], obj.x, obj.y)
+            villager = Villager(clothing_anims['Body'], obj.x, obj.y, villager_clothing.get(obj.type))
             villager.name = obj.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
