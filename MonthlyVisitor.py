@@ -171,12 +171,11 @@ class Sprite(object):
             self.frame_index = frame_index % len(self.anim.frames)
             self.frame = self.anim.frames[self.frame_index]
         else:
-            frame_index = min(frame_index, len(self.anim.frames) - 1)
-            self.frame = self.anim.frames[frame_index]
-            old_frame_index = self.frame_index
-            self.frame_index = frame_index
-            if old_frame_index < len(self.anim.frames) and frame_index >= len(self.anim.frames):
+            if self.frame_index < len(self.anim.frames) and frame_index >= len(self.anim.frames):
                 self.on_anim_finished()
+            self.frame_index = min(frame_index, len(self.anim.frames) - 1)
+            self.frame = self.anim.frames[self.frame_index]
+            
     time = property(get_time, set_time)
 
     @property
