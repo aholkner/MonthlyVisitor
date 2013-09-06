@@ -1564,21 +1564,22 @@ class Game(bacon.Game):
             return
 
         # Lunar cycle
-        if self.full_moon:
-            self.full_moon_time -= bacon.timestep
-            if self.full_moon_time < 0.0:
-                self.full_moon = False
-                player.end_wolf()
-                tween(self, 'curtain', 0.0, 0.3)
-        else:
-            self.lunar_cycle += bacon.timestep / MONTH_TIME
-            if self.lunar_cycle >= 1.0:
-                self.lunar_cycle = 0.0
-                self.full_moon_time = FULL_MOON_TIME
-                self.full_moon = True
-                player.start_wolf()
-                tween(self, 'curtain', 1.0, 0.3)
-                self.menu = None
+        if not player.is_dying:
+            if self.full_moon:
+                self.full_moon_time -= bacon.timestep
+                if self.full_moon_time < 0.0:
+                    self.full_moon = False
+                    player.end_wolf()
+                    tween(self, 'curtain', 0.0, 0.3)
+            else:
+                self.lunar_cycle += bacon.timestep / MONTH_TIME
+                if self.lunar_cycle >= 1.0:
+                    self.lunar_cycle = 0.0
+                    self.full_moon_time = FULL_MOON_TIME
+                    self.full_moon = True
+                    player.start_wolf()
+                    tween(self, 'curtain', 1.0, 0.3)
+                    self.menu = None
 
         # AI
         for animal in animals:
