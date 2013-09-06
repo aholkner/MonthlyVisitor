@@ -26,7 +26,8 @@ except AttributeError:
 bacon.window.title = 'Monthly Visitor'
 bacon.window.width = GAME_WIDTH
 bacon.window.height = GAME_HEIGHT
-bacon.window.resizable = True
+bacon.window.resizable = False
+bacon.window.content_scale = 1.0
 
 font_ui = bacon.Font(None, 16)
 
@@ -1493,6 +1494,12 @@ class Game(bacon.Game):
         self.screen = GameStartScreen()
         self.tutorial = None
 
+        self.moon = moon.Moon()
+        self.moon.x = GAME_WIDTH - 36
+        self.moon.y = 36
+        self.moon.radius = 32
+
+
     def start(self):
         self.lunar_cycle = 0.0
         self.full_moon_time = 0.0
@@ -1598,17 +1605,22 @@ class Game(bacon.Game):
             bacon.fill_rect(0, 0, GAME_WIDTH, self.curtain * 60)
             bacon.fill_rect(0, GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT - self.curtain * 60)
 
+        bacon.set_color(1, 1, 1, 1)
+        self.moon.cycle = self.lunar_cycle
+        self.moon.draw()
+
         self.draw_tutorial()
+
+        bacon.set_color(1, 1, 1, 1)
+        #bacon.draw_string(font_ui, 'Lunar: %f' % self.lunar_cycle, GAME_WIDTH, 64, align = bacon.Alignment.right)
+        #bacon.draw_string(font_ui, self.lunar_name, GAME_WIDTH, 120, align = bacon.Alignment.right)
 
         bacon.set_color(1, 1, 1, 1)
         if player.motive_food < player.motive_food_trigger:
             bacon.set_color(1, 0, 0, 1)
-        bacon.draw_string(font_ui, 'Food level: %d%%' % round(player.motive_food * 100), GAME_WIDTH, 32, align=bacon.Alignment.right)
+        bacon.draw_string(font_ui, 'Strength: %d%%' % round(player.motive_food * 100), GAME_WIDTH, 96, align=bacon.Alignment.right)
 
-        bacon.set_color(1, 1, 1, 1)
-        bacon.draw_string(font_ui, 'Lunar: %f' % self.lunar_cycle, GAME_WIDTH, 64, align = bacon.Alignment.right)
-        bacon.draw_string(font_ui, self.lunar_name, GAME_WIDTH, 96, align = bacon.Alignment.right)
-
+        
         if self.menu:
             self.menu.draw()
 

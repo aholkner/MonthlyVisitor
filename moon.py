@@ -1,7 +1,7 @@
 import bacon
 import math
 
-moon_image = bacon.Image('res/moon.jpg')
+moon_image = bacon.Image('res/moon.png', atlas=0)
 
 shader = bacon.Shader(vertex_source=
     """
@@ -58,7 +58,7 @@ shader = bacon.Shader(vertex_source=
         // Rim
         illum += pow(max(0.0, -light.z), 10.0) * pow(1.0 - normal.z, 10.0);
 
-        gl_FragColor = pow(color * clamp(illum, 0.0, 1.0), vec4(0.45));
+        gl_FragColor = vec4(pow(color.xyz * clamp(illum, 0.0, 1.0), vec3(0.45)), color.a);
     }
     """)
 
@@ -70,7 +70,7 @@ class Moon(object):
     def __init__(self):
         self.x = 0
         self.y = 0
-        self.radius = 250
+        self.radius = 205
         self.cycle = 0.0
 
     def draw(self):
@@ -79,7 +79,9 @@ class Moon(object):
         uniform_angle.value = math.pi / 2.0 - self.cycle * math.pi * 2
         bacon.set_shader(shader)
         bacon.draw_image(moon_image, 
-            self.x - moon_image.width / 2,
-            self.y - moon_image.height / 2)
+            self.x - self.radius,
+            self.y - self.radius,
+            self.x + self.radius,
+            self.y + self.radius)
         bacon.set_shader(None)
 
