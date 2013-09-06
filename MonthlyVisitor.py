@@ -114,8 +114,21 @@ class Anim(object):
         self.frames = frames
         
 clothing_anims = dict(
-    body = load_clothing_anims('Body'),
-    brown_skirt = load_clothing_anims('BrownSkirt'),
+    Body = load_clothing_anims('Body'),
+    BrownHat = load_clothing_anims('BrownHat'),
+    BrownShirt = load_clothing_anims('BrownShirt'),
+    BrownShoes = load_clothing_anims('BrownShoes'),
+    BrownSkirt = load_clothing_anims('BrownSkirt'),
+    ChainHood = load_clothing_anims('ChainHood'),
+    ChainTorso = load_clothing_anims('ChainTorso'),
+    GreenPants = load_clothing_anims('GreenPants'),
+    HairBlonde = load_clothing_anims('HairBlonde'),
+    Hood = load_clothing_anims('Hood'),
+    MetalBoots = load_clothing_anims('MetalBoots'),
+    MetalHat = load_clothing_anims('MetalHat'),
+    MetalPants = load_clothing_anims('MetalPants'),
+    PurpleJacket = load_clothing_anims('PurpleJacket'),
+    WhiteShirt = load_clothing_anims('WhiteShirt'),
 )
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
 
@@ -272,8 +285,12 @@ class Character(Sprite):
     def __init__(self, anims, x, y, clothing=None):
         self._time = 0.0
         self.anims = anims
-        self.clothing = clothing
+        if clothing:
+            self.clothing = [clothing_anims[x] for x in clothing]
+        else:
+            self.clothing = None
         self.update_anim()
+
         super(Character, self).__init__(anims[self.anim_name], x, y)
         self.path = None
         self.target_item = None
@@ -1457,7 +1474,7 @@ class Tutorial(object):
         self.text = text
         self.rect = rect
 
-player = Player(clothing_anims['body'], 0, 0, [clothing_anims['brown_skirt']])
+player = Player(clothing_anims['Body'], 0, 0, ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde'])
 villagers = []
 animals = []
 waypoints = []
@@ -1504,7 +1521,7 @@ for object_layer in tilemap.object_layers:
             player.y = obj.y
             tilemap.update_sprite_position(player)
         elif obj.name == 'Villager':
-            villager = Villager(clothing_anims['body'], obj.x, obj.y)
+            villager = Villager(clothing_anims['Body'], obj.x, obj.y)
             villager.name = obj.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
