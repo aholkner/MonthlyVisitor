@@ -96,6 +96,11 @@ def spritesheet_anim(image, cols, rows, pivot_x, pivot_y):
     images = itertools.chain(*sheet.cells)
     return Anim([Frame(image, pivot_x, pivot_y) for image in images])
 
+def load_clothing_anims(name):
+    anims = lpc_anims('Clothing-' + name + '.png', 9, 4)
+    anims['death'] = spritesheet_anim('Clothing-' + name + '-Death.png', 6, 1, 32, 54)
+    return anims
+
 class Frame(object):
     def __init__(self, image, pivot_x, pivot_y):
         self.image = load_image(image)
@@ -108,9 +113,10 @@ class Anim(object):
     def __init__(self, frames):
         self.frames = frames
         
-player_anims = lpc_anims('BODY_male.png', 9, 4)
-player_anims['death'] = spritesheet_anim('Player-Extra.png', 6, 1, 32, 54)
-
+clothing_anims = dict(
+    body = load_clothing_anims('Body'),
+    brown_skirt = load_clothing_anims('BrownSkirt'),
+)
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
 
 
@@ -133,6 +139,7 @@ class Sprite(object):
 
     def __init__(self, anim, x, y):
         self.anim = anim
+        self.frame_index = 0
         self.frame = anim.frames[0]
         self._time = 0
         self.x = x
@@ -148,10 +155,13 @@ class Sprite(object):
         self._time = time
         frame_index = int(time / self.anim.time_per_frame)
         if self.looping:
-            self.frame = self.anim.frames[frame_index % len(self.anim.frames)]
+            self.frame_index = frame_index % len(self.anim.frames)
+            self.frame = self.anim.frames[self.frame_index]
         else:
-            self.frame = self.anim.frames[min(frame_index, len(self.anim.frames) - 1)]
-            old_frame_index = int(old_time / self.anim.time_per_frame)
+            frame_index = min(frame_index, len(self.anim.frames) - 1)
+            self.frame = self.anim.frames[frame_index]
+            old_frame_index = self.frame_index
+            self.frame_index = frame_index
             if old_frame_index < len(self.anim.frames) and frame_index >= len(self.anim.frames):
                 self.on_anim_finished()
     time = property(get_time, set_time)
@@ -243,6 +253,7 @@ class Character(Sprite):
     run_speed = 220
     facing = 'down'
     action = 'idle'
+    anim_name = 'idle'
     cooldown = 0
     
     is_wolf = False
@@ -258,20 +269,45 @@ class Character(Sprite):
     eating_villager = False
     current_tile = None
 
-    def __init__(self, anims, x, y):
+    def __init__(self, anims, x, y, clothing=None):
+        self._time = 0.0
         self.anims = anims
-        super(Character, self).__init__(self.get_anim(), x, y)
+        self.clothing = clothing
+        self.update_anim()
+        super(Character, self).__init__(anims[self.anim_name], x, y)
         self.path = None
         self.target_item = None
         
+    def draw(self):
+        frame = self.frame
+        x = int(self.x - frame.pivot_x)
+        y = int(self.y - frame.pivot_y)
+        bacon.draw_image(frame.image, x, y)
+
+        if self.clothing:
+            for layer in self.clothing:
+                anim = layer[self.anim_name]
+                if self.frame_index >= len(anim.frames):
+                    print('fdk')
+                frame = anim.frames[self.frame_index]
+                bacon.draw_image(frame.image, x, y)
+
+        # Update animation for next frame
+        self.time += bacon.timestep
+
     def wait(self, time):
         self.cooldown = max(self.cooldown, time)
 
-    def get_anim(self):
+    def update_anim(self):
+        old_anim_name = self.anim_name
         try:
-            return self.anims[self.action + '_' + self.facing]
+            self.anim_name = self.action + '_' + self.facing
+            self.anim = self.anims[self.anim_name]
         except KeyError:
-            return self.anims[self.action]
+            self.anim_name = self.action
+            self.anim = self.anims[self.anim_name]
+        if old_anim_name != self.anim_name:
+            self.time = 0
 
     def die(self):
         if self.is_dying:
@@ -282,7 +318,7 @@ class Character(Sprite):
         self.path = None
         self.looping = False
         self.time = 0
-        self.anim = self.get_anim()
+        self.update_anim()
 
     def on_anim_finished(self):
         if self.is_dying:
@@ -358,7 +394,7 @@ class Character(Sprite):
                 if not self.path:
                     self.on_arrive(target_tile)
                 
-        self.anim = self.get_anim()
+        self.update_anim()
 
     def on_collide(self, tile):
         if self.is_wolf:
@@ -433,7 +469,7 @@ class Character(Sprite):
         if self.cooldown > 0:
             self.cooldown -= bacon.timestep
             self.action = 'idle'
-            self.anim = self.get_anim()
+            self.update_anim()
             return
 
         # If we're standing on food, eat it
@@ -512,7 +548,7 @@ class Player(Character):
         self.path = None
         self.running = True
         self.action = 'idle'
-        self.anim = self.get_anim()
+        self.update_anim()
         for item in inventory.items[:]:
             inventory.drop(item, self.get_drop_tile())
 
@@ -521,7 +557,7 @@ class Player(Character):
         self.path = None
         self.running = False
         self.action = 'idle'
-        self.anim = self.get_anim()
+        self.update_anim()
         if self.eating_villager:
             self.on_arrive(tilemap.get_tile_at(self.x, self.y))
     
@@ -623,7 +659,7 @@ class Animal(Character):
                     self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
             
         if self.snared:
-            self.anim = self.get_anim()
+            self.update_anim()
         else:
             self.update_walk_target_movement()
 
@@ -1393,7 +1429,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap.tmx')
+tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
@@ -1421,7 +1457,7 @@ class Tutorial(object):
         self.text = text
         self.rect = rect
 
-player = Player(player_anims, 0, 0)
+player = Player(clothing_anims['body'], 0, 0, [clothing_anims['brown_skirt']])
 villagers = []
 animals = []
 waypoints = []
@@ -1468,7 +1504,7 @@ for object_layer in tilemap.object_layers:
             player.y = obj.y
             tilemap.update_sprite_position(player)
         elif obj.name == 'Villager':
-            villager = Villager(player_anims, obj.x, obj.y)
+            villager = Villager(clothing_anims['body'], obj.x, obj.y)
             villager.name = obj.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
