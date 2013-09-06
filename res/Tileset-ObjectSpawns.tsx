@@ -224,7 +224,26 @@
  </tile>
  <tile id="50">
   <properties>
-   <property name="Collision" value="Naked"/>
+   <property name="Collision" value="Entrance"/>
+   <property name="Entrance" value="Carpenter"/>
+  </properties>
+ </tile>
+ <tile id="51">
+  <properties>
+   <property name="Collision" value="Entrance"/>
+   <property name="Entrance" value="Butcher"/>
+  </properties>
+ </tile>
+ <tile id="52">
+  <properties>
+   <property name="Collision" value="Entrance"/>
+   <property name="Entrance" value="Baker"/>
+  </properties>
+ </tile>
+ <tile id="53">
+  <properties>
+   <property name="Collision" value="Entrance"/>
+   <property name="Entrance" value="Baker"/>
   </properties>
  </tile>
  <tile id="55">

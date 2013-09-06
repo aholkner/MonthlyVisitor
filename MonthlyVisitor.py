@@ -566,8 +566,14 @@ class Player(Character):
     naked = False
 
     def can_walk(self, tile):
-        if self.naked and not tile.walkable_naked:
-            return False
+        if self.naked and not tile.walkable_entrance:
+            print('we', tile.entrance_owner)
+            # Find owner of this shop, prevent entry if we didn't spawn here
+            for villager in villagers:
+                if villager.name == tile.entrance_owner:
+                    print('sis', villager.spawned_in_shop)
+                    if not villager.spawned_in_shop:
+                        return False
         return tile.walkable
 
     def start_wolf(self):
@@ -590,6 +596,14 @@ class Player(Character):
         self.naked = True
         if self.eating_villager:
             self.on_arrive(tilemap.get_tile_at(self.x, self.y))
+
+        # Check if we're in a shop region, and if so disable the entrance blocker
+        # so we can leave
+        for villager in villagers:
+            if villager.shop_rect and villager.shop_rect.contains(self.x, self.y):
+                villager.spawned_in_shop = True
+            else:
+                villager.spawned_in_shop = False
     
     def on_arrive(self, tile):
         self.action = 'idle'
@@ -702,6 +716,8 @@ class Animal(Character):
 class Villager(Character):
     walk_speed = 50
     run_speed = 50
+    spawned_in_shop = False
+    shop_rect = None
 
     def can_walk(self, tile):
         if not tile.walkable_villager:
@@ -1573,6 +1589,11 @@ for object_layer in tilemap.object_layers:
             tilemap.add_sprite(villager)
         elif obj.name == 'Tutorial':
             tutorials.append(Tutorial(obj.type, Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height)))
+        elif obj.name == 'ShopRegion':
+            for villager in villagers:
+                if villager.name == obj.type:
+                    villager.shop_rect = Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height)
+            
 
 class GameStartScreen(bacon.Game):
     def on_tick(self):

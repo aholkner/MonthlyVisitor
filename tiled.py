@@ -124,8 +124,9 @@ def parse_layer(tm, elem, tilesets):
                         tm.tiles[i].walkable_animal = False
                     elif collision_type == 'Villager':
                         tm.tiles[i].walkable_villager = False
-                    elif collision_type == 'Naked':
-                        tm.tiles[i].walkable_naked = False
+                    elif collision_type == 'Entrance':
+                        tm.tiles[i].walkable_entrance = False
+                        tm.tiles[i].entrance_owner = layer.images[i].properties['Entrance']
                 except AttributeError:
                     pass
 
