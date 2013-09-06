@@ -346,6 +346,14 @@ class Character(Sprite):
 
     def walk(self, arrived_func, hueristic_func):
         self.path = tilemap.get_path(tilemap.get_tile_at(self.x, self.y), arrived_func, hueristic_func, self.max_tilemap_path_size)
+        if self.path and len(self.path) > 1 and self.path[0].rect.contains(self.x, self.y):
+            # Remove first path component if we're already in the tile and past the center of it
+            tx0 = self.path[0].rect.center_x
+            ty0 = self.path[0].rect.center_y
+            tx1 = self.path[1].rect.center_x
+            ty1 = self.path[1].rect.center_y
+            if dot(self.x - tx0, self.y - ty0, self.x - tx1, self.y - ty1) <= 0:
+                del self.path[0]
         return self.path
 
     def walk_to_tile(self, tile):
