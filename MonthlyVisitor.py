@@ -564,6 +564,12 @@ class Character(Sprite):
     
 class Player(Character):
     naked = False
+
+    def can_walk(self, tile):
+        if self.naked and not tile.walkable_naked:
+            return False
+        return tile.walkable
+
     def start_wolf(self):
         self.is_wolf = True
         self.path = None

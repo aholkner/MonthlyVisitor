@@ -13,6 +13,7 @@ class Tile(object):
 
     walkable_animal = True
     walkable_villager = True
+    walkable_naked = True
     _walkable = True
 
     def __init__(self, tx, ty, rect, walkable=True, accept_items=True):

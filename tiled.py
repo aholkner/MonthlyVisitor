@@ -124,6 +124,8 @@ def parse_layer(tm, elem, tilesets):
                         tm.tiles[i].walkable_animal = False
                     elif collision_type == 'Villager':
                         tm.tiles[i].walkable_villager = False
+                    elif collision_type == 'Naked':
+                        tm.tiles[i].walkable_naked = False
                 except AttributeError:
                     pass
 

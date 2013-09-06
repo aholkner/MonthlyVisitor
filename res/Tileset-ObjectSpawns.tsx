@@ -222,6 +222,11 @@
    <property name="Collision" value="Villager"/>
   </properties>
  </tile>
+ <tile id="50">
+  <properties>
+   <property name="Collision" value="Naked"/>
+  </properties>
+ </tile>
  <tile id="55">
   <properties>
    <property name="FactoryClass" value="Clothes"/>
