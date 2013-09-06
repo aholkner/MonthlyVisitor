@@ -548,7 +548,7 @@ class Player(Character):
                         if isinstance(item, Snare):
                             item.destroy()
 
-                if not self.target_item:
+                if not self.target_item and not inventory.is_full:
                     # Only pick up the animal if it was snared and we were targetting the snare,
                     # or we weren't targetting anything.
                     item = animal.item_cls(animal.item_cls.get_default_anim(), 0, 0)
@@ -719,7 +719,7 @@ class Item(Sprite):
             tilemap.remove_sprite(self)
 
     def on_player_interact(self, tile):
-        if self.can_pick_up:
+        if self.can_pick_up and not inventory.is_full:
             inventory.pick_up(self, tile)
         else:
             x, y = camera.world_to_view(self.x, self.y)
@@ -1202,6 +1202,14 @@ class DropAction(object):
         tile = player.get_drop_tile()
         if tile:
             inventory.drop(self.item, tile)
+             
+class PickUpAction(object):
+    def __init__(self, item, tile):
+        self.item = item
+        self.tile = tile
+
+    def __call__(self):
+        inventory.pick_up(self.item, self.tile)
 
 class CraftAction(object):
     def __init__(self, recipe, item):
@@ -1246,17 +1254,28 @@ def show_craft_menu(item, x, y):
             game.menu.add('Drop %s' % item.get_name(), DropAction(item))
         else:
             game.menu.add('Drop %s' % item.get_name(), disabled=True)
-
+    elif item.can_pick_up:
+        if inventory.is_full:
+            game.menu.add('Pick up %s' % item.get_name(), disabled=True, hint=MenuTextHint('Inventory full'))
+        else:
+            game.menu.add('Pick up %s' % item.get_name(), PickUpAction(item, tilemap.get_tile_at(item.x, item.y)))
+    
     if not game.menu.items:
         game.menu = None
 
+
 class Inventory(object):
+    slots = 6
+    slot_image = load_image('InventorySlot.png')
     def __init__(self):
         self.items = []
-        self.x = 32
+        self.item_size_x = 44
+        self.x = int(GAME_WIDTH / 2 - self.slots * self.item_size_x / 2)
         self.y = GAME_HEIGHT - 32
-        self.item_size_x = 32
-        self.item_size_y = 32
+        
+    @property
+    def is_full(self):
+        return len(self.items) >= self.slots
 
     def layout(self):
         for (i, item) in enumerate(self.items):
@@ -1272,18 +1291,27 @@ class Inventory(object):
                 return item
 
     def pick_up(self, item, tile):
+        if self.is_full:
+            return
         tile.remove_item(item)
         item.on_pick_up()
         self.add_item(item)
+        self.layout()
         
     def add_item(self, item):
-        self.items.append(item)
-        self.layout()
+        if self.is_full:
+            tile = player.get_drop_tile()
+            if tile:
+                item.on_dropped(tile)
+        else:
+            self.items.append(item)
+            self.layout()
 
     def drop(self, item, tile):
         self.items.remove(item)
         if tile:
             item.on_dropped(tile)
+        self.layout()
 
     def remove(self, item):
         self.items.remove(item)
@@ -1294,9 +1322,12 @@ class Inventory(object):
             slot_index = self.items.index(initial_item)
         else:
             slot_index = len(self.items)
+        new_items = []
         for output in recipe.outputs:
             crafted_item = output(output.get_default_anim(), 0, 0)
             self.items.insert(slot_index, crafted_item)
+            new_items.append(crafted_item)
+
         for item_class, count in recipe.inputs.items():
             for i in range(count):
                 if initial_item and initial_item.__class__ is item_class:
@@ -1312,10 +1343,20 @@ class Inventory(object):
                                 self.items.remove(item)
                                 item.on_consumed_in_recipe()
                             break
+
+        while len(self.items) > self.slots:
+            if new_items:
+                self.drop(new_items[-1], player.get_drop_tile())
+                del new_items[-1]
+            else:
+                self.drop(self.items[-1], player.get_drop_tile())
+
         self.layout()
 
     def draw(self):
         bacon.set_color(1, 1, 1, 1)
+        for i in range(self.slots):
+            bacon.draw_image(self.slot_image, self.x + i * self.item_size_x - self.slot_image.width / 2, self.y - self.slot_image.height / 2)
         for item in self.items:
             bacon.draw_image(item.inventory_image, item.x - 16, item.y - 16, item.x + 16, item.y + 16)
 
@@ -1635,7 +1676,7 @@ class Game(bacon.Game):
             if tutorial:
                 style = bacon.Style(font_ui)
                 runs = [bacon.GlyphRun(style, tutorial.text)]
-                tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 16, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
+                tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 96, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
 
         if tutorial:
             bacon.set_color(0, 0, 0, 0.8)
