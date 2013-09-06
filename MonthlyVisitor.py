@@ -9,8 +9,8 @@ import random
 import bacon
 import tiled
 import spriter
-from common import Rect
 import moon
+from common import Rect, tween, update_tweens
 
 GAME_WIDTH = 800
 GAME_HEIGHT = 500
@@ -118,7 +118,11 @@ def distance(a, b):
     dy = a.y - b.y
     return sqrt(dx * dx + dy * dy)
 
+def dot(ax, ay, bx, by):
+    return ax * bx + ay * by
+
 class Waypoint(object):
+    index = 0
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -232,8 +236,10 @@ class Sprite(object):
 
 class Character(Sprite):
     name = None
-
+    
+    running = False
     walk_speed = 200
+    run_speed = 220
     facing = 'down'
     action = 'idle'
     cooldown = 0
@@ -241,15 +247,13 @@ class Character(Sprite):
     is_wolf = False
     is_dying = False
     motive_food = 1.0
-    motive_food_trigger = 0.5
+    motive_food_trigger = 0.8
     max_tilemap_path_size = 500
     distance_player_pickup_animal = 24
 
     distance_wolf_villager_search = GAME_WIDTH * 1.5
-    distance_wolf_villager_attack = 16
-    distance_wolf_waypoint_search = GAME_WIDTH * 1.5
+    distance_wolf_villager_attack = 32
     target_villager = None
-    target_waypoint_index = -1
     eating_villager = False
     current_tile = None
 
@@ -258,7 +262,7 @@ class Character(Sprite):
         super(Character, self).__init__(self.get_anim(), x, y)
         self.path = None
         self.target_item = None
-
+        
     def wait(self, time):
         self.cooldown = max(self.cooldown, time)
 
@@ -293,17 +297,28 @@ class Character(Sprite):
 
     def walk_to(self, x, y):
         tile = tilemap.get_tile_at(x, y)
-        return self.walk_to_tile(tile)
+        return self.walk_to_tile(tile)    
 
-    def walk_to_waypoint(self, target_index):
-        self.target_waypoint_index = target_index
+    def walk_to_distant_object(self, obj):
+        if distance(obj, self) > GAME_WIDTH * 0.5:
+            dx = obj.x - self.x
+            dy = obj.y - self.y
+            m = GAME_WIDTH * 0.25 / sqrt(dx * dx + dy * dy)
+            dx *= m
+            dy *= m
+            return self.walk_to(self.x + dx, self.y + dy)
+        else:
+            return self.walk_to(obj.x, obj.y)
+
+    def walk_to_waypoint(self, target_index=None):
         waypoints.sort(key=lambda v:distance(v, self))
         for waypoint in waypoints:
-            if distance(self, waypoint) < self.distance_wolf_waypoint_search:
-                if self.walk_to(waypoint.x, waypoint.y):
-                    return True
+            if target_index is not None and waypoint.index != target_index:
+                continue
+            
+            if self.walk_to_distant_object(waypoint):
+                return True
                 
-
     def update_player_movement(self):
         dx = 0
         dy = 0
@@ -318,7 +333,7 @@ class Character(Sprite):
 
         if dx or dy:
             self.update_facing(dx, dy)
-            self.move_with_collision(tilemap, dx, dy, self.walk_speed)
+            self.move_with_collision(tilemap, dx, dy, self.run_speed if self.running else self.walk_speed)
             self.path = None
             self.target_item = None
             self.action = 'walk'
@@ -333,7 +348,7 @@ class Character(Sprite):
         dx = target_tile.rect.center_x - self.x
         dy = target_tile.rect.center_y - self.y
         self.update_facing(dx, dy)
-        if self.move_with_collision(tilemap, dx, dy, self.walk_speed):
+        if self.move_with_collision(tilemap, dx, dy, self.run_speed if self.running else self.walk_speed):
             self.action = 'walk'
         else:
             # Didn't move, so we've arrived at this path node
@@ -410,11 +425,14 @@ class Character(Sprite):
             # Small bite
             self.add_food_motive(0.1)
             spawn_blood(self.x, self.y)
-            self.walk_to_waypoint(1)
+            self.walk_to_waypoint()
+            self.wait(0.8)
             return
 
         if self.cooldown > 0:
             self.cooldown -= bacon.timestep
+            self.action = 'idle'
+            self.anim = self.get_anim()
             return
 
         # If we're standing on food, eat it
@@ -435,7 +453,23 @@ class Character(Sprite):
 
                 # Search for nearby items that are food -- note that the returned path is not optimal, but
                 # looks more organic anyway
-                self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search())
+                if self.walk(path_arrived_wolf_food(), path_hueristic_wolf_search()):
+                    return
+
+                # Walk towards nearest villager over multiple screens
+                for villager in villagers:
+                    if self.walk_to_distant_object(villagers[0]):
+                        self.target_villager = villager
+                        return
+
+        if not self.path:
+            # Random walk
+            dx = random.randrange(-3, 3) * 32
+            dy = random.randrange(-3, 3) * 32
+            self.wait(random.randrange(1, 2))
+            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+
+        self.update_walk_target_movement()
 
     def get_drop_tile(self):
         tile = tilemap.get_tile_at(self.x, self.y)
@@ -472,6 +506,23 @@ class Character(Sprite):
 
     
 class Player(Character):
+    def start_wolf(self):
+        self.is_wolf = True
+        self.path = None
+        self.running = True
+        self.action = 'idle'
+        self.anim = self.get_anim()
+        for item in inventory.items[:]:
+            inventory.drop(item, self.get_drop_tile())
+
+    def end_wolf(self):
+        self.is_wolf = False
+        self.path = None
+        self.running = False
+        self.action = 'idle'
+        self.anim = self.get_anim()
+        if self.eating_villager:
+            self.on_arrive(tilemap.get_tile_at(self.x, self.y))
     
     def on_arrive(self, tile):
         self.action = 'idle'
@@ -483,41 +534,107 @@ class Player(Character):
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
             self.eating_villager = False
             self.add_food_motive(1.0)
+            self.wait(2.5)
 
-        if self.target_item:
-            target_item = self.target_item
-            self.target_item = None
-            target_item.on_player_interact(tile)
-        else:
-            # Check if we arrived on an animal
-            for animal in animals:
-                if distance(self, animal) < self.distance_player_pickup_animal:
+        # Check if we arrived on an animal
+        for animal in animals:
+            if distance(self, animal) < self.distance_player_pickup_animal:
+                if animal.snared:
+                    # Remove the snare
+                    for item in tile.items:
+                        if item is self.target_item:
+                            self.target_item = None
+                        if isinstance(item, Snare):
+                            item.destroy()
+
+                if not self.target_item:
+                    # Only pick up the animal if it was snared and we were targetting the snare,
+                    # or we weren't targetting anything.
                     item = animal.item_cls(animal.item_cls.get_default_anim(), 0, 0)
                     inventory.add_item(item)
                     tilemap.remove_sprite(animal)
                     animals.remove(animal)
                     return
 
+        # Normal pick_up
+        if self.target_item:
+            target_item = self.target_item
+            self.target_item = None
+            target_item.on_player_interact(tile)
+
+
 class Animal(Character):
     walk_speed = 50
+    run_speed = 110
+
+    run_cooldown = 0
+    run_cooldown_time = 1.5 # How long to run before exhaustion
+    danger_radius = 100
+
+    snare_attract_radius = 128
+    snare_catch_radius = 8
+    snared = False
 
     def can_walk(self, tile):
         return tile.walkable and tile.walkable_animal
 
     def update_animal_movement(self):
+        if self.running:
+            self.run_cooldown -= bacon.timestep
+
         if not self.path:
-            if self.cooldown > 0:
-                self.cooldown -= bacon.timestep
-                return
-            dx = random.randrange(-4, 4) * 32
-            dy = random.randrange(-4, 4) * 32
-            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
-            self.wait(random.randrange(1, 8))
-        self.update_walk_target_movement()
+            if distance(self, player) < self.danger_radius and self.run_cooldown > 0:
+                self.running = True
+                self.run_cooldown -= bacon.timestep
+                dx = random.randrange(1, 5) * 32
+                dy = random.randrange(0, 5) * 32
+                if player.x > self.x:
+                    dx = -dx
+                if player.y > self.y:
+                    dy = -dy
+                self.wait(random.randrange(1, 4) / 4.0)
+            else:
+                if self.running:
+                    self.running = False
+                    self.wait(2)
+                    return
+
+                if self.cooldown > 0:
+                    self.cooldown -= bacon.timestep
+                    return
+
+                # Reset exhaustion
+                self.run_cooldown = self.run_cooldown_time
+                
+                # Check for nearby snares
+                for snare in snares:
+                    if distance(snare, self) < self.snare_catch_radius:
+                        self.snared = True
+                    elif distance(snare, self) < self.snare_attract_radius:
+                        self.running = False
+                        self.path = [tilemap.get_tile_at(snare.x, snare.y)]
+                
+                # Random walk
+                if not self.path and not self.snared:
+                    dx = random.randrange(-4, 4) * 32
+                    dy = random.randrange(-4, 4) * 32
+                    self.wait(random.randrange(1, 8))
+                    self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+            
+        if self.snared:
+            self.anim = self.get_anim()
+        else:
+            self.update_walk_target_movement()
+
+
+    def on_collide(self, tile):
+        if self.running:
+            self.cooldown = 0
 
 
 class Villager(Character):
     walk_speed = 50
+    run_speed = 50
 
     def can_walk(self, tile):
         if not tile.walkable_villager:
@@ -645,6 +762,24 @@ class TreeStump(Item):
     can_pick_up = False
     
 @spawn
+class BerryPlant(Item):
+    name = 'Berry Plant'
+    can_pick_up = False
+
+    def on_consumed_in_recipe(self):
+        self.anim = object_anims['BerryPlantEmpty']
+        self.__class__ = BerryPlantEmpty
+
+@spawn
+class BerryPlantEmpty(Item):
+    name = 'Berry Plant'
+    can_pick_up = False
+
+@spawn
+class Berries(Item):
+    food_human = 0.05
+
+@spawn
 class Wood(Item):
     name = 'Wood'
 
@@ -701,7 +836,7 @@ class Fence(Item):
         self.update_fence_and_adjacent()
 
     def on_dropped(self, tile):
-        super(Fence, self).on_dropped()
+        super(Fence, self).on_dropped(tile)
         self.update_fence_and_adjacent()
 
     def update_fence_and_adjacent(self):
@@ -769,6 +904,26 @@ class Steel(Item):
     pass
 
 @spawn
+class Grass(Item):
+    pass
+
+@spawn
+class Rope(Item):
+    pass
+
+@spawn
+class Snare(Item):
+    def on_dropped(self, tile):
+        super(Snare, self).on_dropped(tile)
+        snares.append(self)
+
+    def on_pick_up(self):
+        try:
+            snares.remove(self)
+        except ValueError:
+            pass
+
+@spawn
 class Chicken(Item):
     food_wolf = 0.3
 
@@ -826,8 +981,9 @@ recipes = [
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat'),
     Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat'),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
-    #Recipe(RabbitSnare)
-    #Recipe(String
+    Recipe(Snare, {Rope: 2, Vegetable: 1}),
+    Recipe(Rope, {Grass: 3}),
+    Recipe(Berries, {BerryPlant: 1}, 'Pick berries'),
     #Recipe(Grass Suit
     #Recipe(FishingRod)
 
@@ -1125,7 +1281,8 @@ class Inventory(object):
 
     def drop(self, item, tile):
         self.items.remove(item)
-        item.on_dropped(tile)
+        if tile:
+            item.on_dropped(tile)
 
     def remove(self, item):
         self.items.remove(item)
@@ -1217,13 +1374,19 @@ for tileset in tilemap.tilesets:
 Fence.fence_anims[''] = Fence.get_default_anim()
 StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 
+class Tutorial(object):
+    def __init__(self, text, rect):
+        self.text = text
+        self.rect = rect
 
 player = Player(player_anims, 0, 0)
 villagers = []
 animals = []
 waypoints = []
+snares = []
 tilemap.add_sprite(player)
 inventory = Inventory()
+tutorials = []
 
 
 for layer in tilemap.layers:
@@ -1247,37 +1410,55 @@ for layer in tilemap.layers:
                     owner = image.properties.get('Owner')
                     cooldown = int(image.properties.get('Cooldown', 5))
                     factories.append(Factory(tile, factory_class, owner, cooldown))
+
+                if image.properties.get('Waypoint'):
+                    waypoint = Waypoint(tile.rect.center_x, tile.rect.center_y)
+                    waypoints.append(waypoint)
     elif layer.name == 'Blood':
         blood_layer = layer
 camera = Camera()
 
 
 for object_layer in tilemap.object_layers:
-    for object in object_layer.objects:
-        if object.name == 'PlayerStart':
-            player.x = object.x
-            player.y = object.y
+    for obj in object_layer.objects:
+        if obj.name == 'PlayerStart':
+            player.x = obj.x
+            player.y = obj.y
             tilemap.update_sprite_position(player)
-        elif object.name == 'Villager':
-            villager = Villager(player_anims, object.x, object.y)
-            villager.name = object.type
+        elif obj.name == 'Villager':
+            villager = Villager(player_anims, obj.x, obj.y)
+            villager.name = obj.type
             villagers.append(villager)
             tilemap.add_sprite(villager)
-        elif object.name == 'Waypoint':
-            waypoint = Waypoint(object.x, object.y)
-            waypoints.append(waypoint)
+        elif obj.name == 'Tutorial':
+            tutorials.append(Tutorial(obj.type, Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height)))
 
-
-class StartScreen(bacon.Game):
-    def __init__(self):
+class GameStartScreen(bacon.Game):
+    def on_tick(self):
         self.moon = moon.Moon()
         self.moon.x = GAME_WIDTH / 2
         self.moon.y = GAME_HEIGHT / 2
+        self.moon.angle = 0.0
 
-    def on_tick(self):
         bacon.clear(0, 0, 0, 1)
         bacon.set_color(1, 1, 1, 1)
         self.moon.draw()
+
+        bacon.set_color(1, 0, 0, 1)
+        bacon.draw_string(font_ui, 'Monthly Visitor', 
+                          0, 0, GAME_WIDTH, GAME_HEIGHT,
+                          align = bacon.Alignment.center,
+                          vertical_align = bacon.VerticalAlignment.center)
+
+        bacon.set_color(1, 1, 1, 1)
+        bacon.draw_string(font_ui, 'Click to start', 
+                          0, int(GAME_HEIGHT * 0.75), GAME_WIDTH,
+                          align = bacon.Alignment.center,
+                          vertical_align = bacon.VerticalAlignment.center)
+
+    def on_mouse_button(self, button, pressed):
+        game.screen = None
+        game.start()
 
 class GameOverScreen(bacon.Game):
     def __init__(self):
@@ -1292,17 +1473,66 @@ class GameOverScreen(bacon.Game):
                           vertical_align = bacon.VerticalAlignment.center)
 
                          
+FULL_MOON_TIME = 30.0
+MONTH_TIME = 120.0
+
+lunar_names = [
+    'Waxing Gibbous',
+    'First Quarter',
+    'Waxing Crescent',
+    'New Moon',
+    'Waning Crescent',
+    'Third Quarter',
+    'Waning Gibbous',
+    'Waning Gibbous',
+]
 
 class Game(bacon.Game):
     def __init__(self):
         self.menu = None
-        self.screen = StartScreen()
+        self.screen = GameStartScreen()
+        self.tutorial = None
+
+    def start(self):
+        self.lunar_cycle = 0.0
+        self.full_moon_time = 0.0
+        self.full_moon = False
+
+        self.curtain = 0.0
+        player.motive_food = 1.0
+
+    @property
+    def lunar_name(self):
+        if self.lunar_cycle == 0.0:
+            return 'FULL MOON'
+        else:
+            return lunar_names[int(self.lunar_cycle * 8.0)]
 
     def on_tick(self):
+        update_tweens()
+
         if self.screen:
             self.screen.on_tick()
             return
 
+        # Lunar cycle
+        if self.full_moon:
+            self.full_moon_time -= bacon.timestep
+            if self.full_moon_time < 0.0:
+                self.full_moon = False
+                player.end_wolf()
+                tween(self, 'curtain', 0.0, 0.3)
+        else:
+            self.lunar_cycle += bacon.timestep / MONTH_TIME
+            if self.lunar_cycle >= 1.0:
+                self.lunar_cycle = 0.0
+                self.full_moon_time = FULL_MOON_TIME
+                self.full_moon = True
+                player.start_wolf()
+                tween(self, 'curtain', 1.0, 0.3)
+                self.menu = None
+
+        # AI
         for animal in animals:
             animal.update_animal_movement()
         for villager in villagers:
@@ -1314,19 +1544,22 @@ class Game(bacon.Game):
             else:
                 player.update_player_motives()
                 player.update_player_movement()
+                player.update_walk_target_movement()
 
-                for factory in factories:
-                    factory.update()
+                if not self.full_moon:
+                    for factory in factories:
+                        factory.update()
         
             if player.motive_food <= 0:
                 player.die()
 
-        player.update_walk_target_movement()
 
+        # Camera
         camera.x = int(player.x)
         camera.y = int(player.y)
         camera.clamp_to_bounds(tilemap.get_bounds())
 
+        # Rendering
         bacon.clear(0.8, 0.7, 0.6, 1.0)
         bacon.push_transform()
         camera.apply()
@@ -1357,18 +1590,50 @@ class Game(bacon.Game):
         
         
     def draw_ui(self):
-        bacon.set_color(0, 0, 0, 1)
+        bacon.set_color(1, 1, 1, 1)
+        inventory.draw()
+        
+        if self.curtain:
+            bacon.set_color(0, 0, 0, 1)
+            bacon.fill_rect(0, 0, GAME_WIDTH, self.curtain * 60)
+            bacon.fill_rect(0, GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT - self.curtain * 60)
+
+        self.draw_tutorial()
+
+        bacon.set_color(1, 1, 1, 1)
         if player.motive_food < player.motive_food_trigger:
             bacon.set_color(1, 0, 0, 1)
         bacon.draw_string(font_ui, 'Food level: %d%%' % round(player.motive_food * 100), GAME_WIDTH, 32, align=bacon.Alignment.right)
-        inventory.draw()
 
-        if player.is_wolf:
-            bacon.set_color(0, 0, 0, 1)
-            bacon.draw_string(font_ui, 'WOLF', 0, 32)
+        bacon.set_color(1, 1, 1, 1)
+        bacon.draw_string(font_ui, 'Lunar: %f' % self.lunar_cycle, GAME_WIDTH, 64, align = bacon.Alignment.right)
+        bacon.draw_string(font_ui, self.lunar_name, GAME_WIDTH, 96, align = bacon.Alignment.right)
 
         if self.menu:
             self.menu.draw()
+
+    def draw_tutorial(self):
+        tutorial = None
+        for t in tutorials:
+            if t.rect.contains(player.x, player.y):
+                tutorial = t
+
+        if tutorial != self.tutorial:
+            self.tutorial = tutorial
+            if tutorial:
+                style = bacon.Style(font_ui)
+                runs = [bacon.GlyphRun(style, tutorial.text)]
+                tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 16, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
+
+        if tutorial:
+            bacon.set_color(0, 0, 0, 0.8)
+            g = tutorial.glyph_layout
+
+            r = Rect(g.x + g.width / 2- g.content_width / 2, g.y, g.x + g.width / 2 + g.content_width / 2, g.y - g.content_height)
+            r.fill()
+            bacon.set_color(1, 1, 1, 1)
+            bacon.draw_glyph_layout(tutorial.glyph_layout)
+
 
     def on_key(self, key, pressed):
         if self.screen:
@@ -1382,10 +1647,15 @@ class Game(bacon.Game):
                 player.motive_food -= 0.2
             if pressed and key == bacon.Keys.plus:
                 player.motive_food += 0.2
+            if pressed and key == bacon.Keys.right_bracket:
+                self.lunar_cycle += 0.25
+            if pressed and key == bacon.Keys.left_bracket:
+                self.lunar_cycle -= 0.25
 
     def on_mouse_button(self, button, pressed):
         if self.screen:
             self.screen.on_mouse_button(button, pressed)
+            return
 
         if self.menu:
             self.menu.on_mouse_button(button, pressed)

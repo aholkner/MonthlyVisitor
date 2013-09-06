@@ -102,6 +102,11 @@
    <property name="Anim" value="TreeStump"/>
   </properties>
  </tile>
+ <tile id="21">
+  <properties>
+   <property name="Class" value="Snare"/>
+  </properties>
+ </tile>
  <tile id="22">
   <properties>
    <property name="Class" value="Steel"/>
@@ -110,6 +115,11 @@
  <tile id="23">
   <properties>
    <property name="Class" value="Iron"/>
+  </properties>
+ </tile>
+ <tile id="25">
+  <properties>
+   <property name="Waypoint" value="1"/>
   </properties>
  </tile>
  <tile id="26">
@@ -125,6 +135,11 @@
  <tile id="28">
   <properties>
    <property name="Anim" value="BoneRibs"/>
+  </properties>
+ </tile>
+ <tile id="29">
+  <properties>
+   <property name="Class" value="Rope"/>
   </properties>
  </tile>
  <tile id="32">

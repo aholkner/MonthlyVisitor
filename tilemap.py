@@ -46,11 +46,13 @@ class Tile(object):
             pass
 
 class TilemapObject(object):
-    def __init__(self, name, type, x, y):
+    def __init__(self, name, type, x, y, width=0, height=0):
         self.name = name
         self.type = type
         self.x = x
         self.y = y
+        self.width = width
+        self.height = height
 
 class TilemapObjectLayer(object):
     def __init__(self, name):

@@ -1,4 +1,5 @@
 import bacon
+import math
 
 moon_image = bacon.Image('res/moon.jpg')
 
@@ -31,7 +32,7 @@ shader = bacon.Shader(vertex_source=
     uniform sampler2D g_Texture0;
     uniform vec2 center;
     uniform float radius;
-    uniform float g_Time;
+    uniform float angle;
     
     varying vec2 v_TexCoord0;
     varying vec4 v_Color;
@@ -46,7 +47,6 @@ shader = bacon.Shader(vertex_source=
         vec3 normal = vec3((v_Position - center) / radius, 0.0);
         normal.z = 1.0 - (normal.x * normal.x + normal.y * normal.y);
 
-        float angle = g_Time;
         vec3 light = vec3(cos(angle), 0.0, sin(angle));
         
          // Direct diffuse
@@ -64,14 +64,19 @@ shader = bacon.Shader(vertex_source=
 
 uniform_center = shader.uniforms['center']
 uniform_radius = shader.uniforms['radius']
+uniform_angle = shader.uniforms['angle']
 
 class Moon(object):
     def __init__(self):
-        pass
+        self.x = 0
+        self.y = 0
+        self.radius = 250
+        self.cycle = 0.0
 
     def draw(self):
         uniform_center.value = (self.x, self.y)
-        uniform_radius.value = 250
+        uniform_radius.value = self.radius
+        uniform_angle.value = math.pi / 2.0 - self.cycle * math.pi * 2
         bacon.set_shader(shader)
         bacon.draw_image(moon_image, 
             self.x - moon_image.width / 2,

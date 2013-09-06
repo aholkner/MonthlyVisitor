@@ -1,6 +1,17 @@
 Pixel Splatter Pack by Mirz123
 mirz123.divantart.com
 
+<<<<<<< HEAD
 Full Moon
 http://commons.wikimedia.org/wiki/File:FullMoonHauknes.jpg
+=======
+
+http://opengameart.org/content/lpc-style-farm-animals
+Attribute to Daniel Eddeland, and link to opengameart (preferably this submission).
+
+http://opengameart.org/content/rpg-tiles-cobble-stone-paths-town-objects
+Credit goes to: Zabin, Daneeklu, Jetrel, Hyptosis, Redshrike, Bertram.
+
+www.calropes.com
+>>>>>>> 8f3cebbbd00556d6698b8a0c7344f6963c58b86a
 
