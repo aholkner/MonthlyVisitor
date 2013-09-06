@@ -131,6 +131,7 @@ clothing_anims = dict(
     WhiteShirt = load_clothing_anims('WhiteShirt'),
     Wolf = load_clothing_anims('Wolf'),
 )
+default_player_clothing = ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde']
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
 
 
@@ -285,16 +286,19 @@ class Character(Sprite):
     def __init__(self, anims, x, y, clothing=None):
         self._time = 0.0
         self.anims = anims
-        if clothing:
-            self.clothing = [clothing_anims[x] for x in clothing]
-        else:
-            self.clothing = None
         self.update_anim()
+        self.set_clothing(clothing)
 
         super(Character, self).__init__(anims[self.anim_name], x, y)
         self.path = None
         self.target_item = None
         
+    def set_clothing(self, clothing):
+        if clothing:
+            self.clothing = [clothing_anims[x] for x in clothing]
+        else:
+            self.clothing = None
+
     def draw(self):
         frame = self.frame
         x = int(self.x - frame.pivot_x)
@@ -304,8 +308,6 @@ class Character(Sprite):
         if self.clothing:
             for layer in self.clothing:
                 anim = layer[self.anim_name]
-                if self.frame_index >= len(anim.frames):
-                    print('fdk')
                 frame = anim.frames[self.frame_index]
                 bacon.draw_image(frame.image, x, y)
 
@@ -566,6 +568,7 @@ class Player(Character):
         self.running = True
         self.action = 'idle'
         self.update_anim()
+        self.set_clothing(['Wolf'])
         for item in inventory.items[:]:
             inventory.drop(item, self.get_drop_tile())
 
@@ -575,6 +578,7 @@ class Player(Character):
         self.running = False
         self.action = 'idle'
         self.update_anim()
+        self.set_clothing(None)
         if self.eating_villager:
             self.on_arrive(tilemap.get_tile_at(self.x, self.y))
     
@@ -1474,7 +1478,7 @@ class Tutorial(object):
         self.text = text
         self.rect = rect
 
-player = Player(clothing_anims['Body'], 0, 0, ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde', 'Wolf'])
+player = Player(clothing_anims['Body'], 0, 0, default_player_clothing)
 villagers = []
 animals = []
 waypoints = []
