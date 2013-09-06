@@ -602,6 +602,10 @@ class Player(Character):
                 villager.spawned_in_shop = True
             else:
                 villager.spawned_in_shop = False
+
+            # Move villager to center of shop to talk to naked player
+            if villager.shop_rect:
+                villager.walk_to(villager.shop_rect.center_x, villager.shop_rect.center_y)
     
     def on_collide(self, tile):
         if not tile.walkable_entrance and player.naked:
@@ -729,17 +733,14 @@ class Villager(Character):
 
     def update_villager_movement(self):
         if not self.path:
-            if player.naked and self.shop_rect:
-                self.walk_to(self.shop_rect.center_x, self.shop_rect.center_y)
-                return
-
             if self.cooldown > 0:
                 self.cooldown -= bacon.timestep
                 return
-            dx = random.randrange(-4, 4) * 32
-            dy = random.randrange(-4, 4) * 32
-            self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
-            self.wait(random.randrange(1, 8))
+            if not player.naked:
+                dx = random.randrange(-4, 4) * 32
+                dy = random.randrange(-4, 4) * 32
+                self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
+                self.wait(random.randrange(1, 8))
         self.update_walk_target_movement()
 
     def on_arrive(self, tile):
