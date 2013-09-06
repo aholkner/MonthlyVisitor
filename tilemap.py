@@ -55,6 +55,7 @@ class TilemapObject(object):
         self.y = y
         self.width = width
         self.height = height
+        self.properties = {}
 
 class TilemapObjectLayer(object):
     def __init__(self, name):

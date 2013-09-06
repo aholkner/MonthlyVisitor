@@ -111,7 +111,7 @@
   </data>
  </layer>
  <objectgroup name="Objects" width="300" height="300">
-  <object name="PlayerStart" gid="539" x="6061" y="9419"/>
+  <object name="PlayerStart" gid="539" x="6534" y="7877"/>
   <object name="Villager" type="Baker" gid="793" x="5820" y="8076"/>
   <object name="Villager" type="Farmer" gid="793" x="7128" y="8444"/>
   <object name="Villager" type="Blacksmith" gid="793" x="7241" y="7241"/>
@@ -124,6 +124,11 @@
   <object name="ShopRegion" type="Carpenter" x="5360" y="7538" width="414" height="194"/>
   <object name="ShopRegion" type="Butcher" x="5901" y="7152" width="417" height="196"/>
   <object name="ShopRegion" type="Blacksmith" x="7121" y="7124" width="278" height="323"/>
+  <object name="Tutorial" type="&quot;Quick man, in here; I've got some clothes for you.&quot;" x="6367" y="7291" width="377" height="514">
+   <properties>
+    <property name="Condition" value="Naked"/>
+   </properties>
+  </object>
  </objectgroup>
  <layer name="Collision" width="300" height="300" opacity="0.4">
   <properties>

@@ -141,7 +141,15 @@ def parse_object_group(tm, elem):
             y = int(object.get('y'))
             width = int(object.get('width', 0))
             height = int(object.get('height', 0))
-            layer.objects.append(tilemap.TilemapObject(name, type, x, y, width, height))
+            tilemap_object = tilemap.TilemapObject(name, type, x, y, width, height)
+            layer.objects.append(tilemap_object)
+            for child in object:
+                if child.tag == 'properties':
+                    for property in child:
+                        if property.tag == 'property':
+                            name = property.get('name')
+                            value = property.get('value')
+                            tilemap_object.properties[name] = value
 
 def parse(tmx_file):
     base_dir = os.path.dirname(tmx_file)

@@ -567,11 +567,9 @@ class Player(Character):
 
     def can_walk(self, tile):
         if self.naked and not tile.walkable_entrance:
-            print('we', tile.entrance_owner)
             # Find owner of this shop, prevent entry if we didn't spawn here
             for villager in villagers:
                 if villager.name == tile.entrance_owner:
-                    print('sis', villager.spawned_in_shop)
                     if not villager.spawned_in_shop:
                         return False
         return tile.walkable
@@ -605,6 +603,11 @@ class Player(Character):
             else:
                 villager.spawned_in_shop = False
     
+    def on_collide(self, tile):
+        if not tile.walkable_entrance and player.naked:
+            game.show_message('"You can\'t come in here like that, get some clothes on!"')
+        return super(Player, self).on_collide(tile)
+
     def on_arrive(self, tile):
         self.action = 'idle'
         if self.eating_villager:
@@ -726,6 +729,10 @@ class Villager(Character):
 
     def update_villager_movement(self):
         if not self.path:
+            if player.naked and self.shop_rect:
+                self.walk_to(self.shop_rect.center_x, self.shop_rect.center_y)
+                return
+
             if self.cooldown > 0:
                 self.cooldown -= bacon.timestep
                 return
@@ -734,6 +741,12 @@ class Villager(Character):
             self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
             self.wait(random.randrange(1, 8))
         self.update_walk_target_movement()
+
+    def on_arrive(self, tile):
+        super(Villager, self).on_arrive(tile)
+        if player.naked:
+            self.facing = 'down'
+            self.update_anim()
 
 
 _spawn_classes = {}
@@ -1588,7 +1601,9 @@ for object_layer in tilemap.object_layers:
             villagers.append(villager)
             tilemap.add_sprite(villager)
         elif obj.name == 'Tutorial':
-            tutorials.append(Tutorial(obj.type, Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height)))
+            tutorial = Tutorial(obj.type, Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height))
+            tutorial.condition = obj.properties.get('Condition')
+            tutorials.append(tutorial)
         elif obj.name == 'ShopRegion':
             for villager in villagers:
                 if villager.name == obj.type:
@@ -1660,6 +1675,8 @@ class Game(bacon.Game):
         self.moon.y = 36
         self.moon.radius = 32
 
+        self.message = None
+        self.message_time = 0.0
 
     def start(self):
         self.lunar_cycle = 0.0
@@ -1682,6 +1699,11 @@ class Game(bacon.Game):
         if self.screen:
             self.screen.on_tick()
             return
+
+        if self.message_time > 0.0:
+            self.message_time -= bacon.timestep
+        else:
+            self.message = None
 
         # Lunar cycle
         if not player.is_dying:
@@ -1790,7 +1812,13 @@ class Game(bacon.Game):
         tutorial = None
         for t in tutorials:
             if t.rect.contains(player.x, player.y):
+                if t.condition == 'Naked' and not player.naked:
+                    continue
                 tutorial = t
+                break
+
+        if self.message:
+            tutorial = self.message
 
         if tutorial != self.tutorial:
             self.tutorial = tutorial
@@ -1808,6 +1836,9 @@ class Game(bacon.Game):
             bacon.set_color(1, 1, 1, 1)
             bacon.draw_glyph_layout(tutorial.glyph_layout)
 
+    def show_message(self, message, time=2.0):
+        self.message = Tutorial(message, None)
+        game.message_time = time
 
     def on_key(self, key, pressed):
         if self.screen:
