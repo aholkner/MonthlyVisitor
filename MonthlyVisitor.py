@@ -129,6 +129,7 @@ clothing_anims = dict(
     MetalPants = load_clothing_anims('MetalPants'),
     PurpleJacket = load_clothing_anims('PurpleJacket'),
     WhiteShirt = load_clothing_anims('WhiteShirt'),
+    Wolf = load_clothing_anims('Wolf'),
 )
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
 
@@ -1473,7 +1474,7 @@ class Tutorial(object):
         self.text = text
         self.rect = rect
 
-player = Player(clothing_anims['Body'], 0, 0, ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde'])
+player = Player(clothing_anims['Body'], 0, 0, ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde', 'Wolf'])
 villagers = []
 animals = []
 waypoints = []
