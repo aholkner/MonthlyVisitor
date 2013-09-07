@@ -81,6 +81,11 @@
     <property name="Class" value="Stick"/>
    </properties>
   </tile>
+  <tile id="15">
+   <properties>
+    <property name="Class" value="Reed"/>
+   </properties>
+  </tile>
   <tile id="16">
    <properties>
     <property name="Class" value="Chicken"/>
@@ -263,6 +268,11 @@
    <properties>
     <property name="Collision" value="Entrance"/>
     <property name="Entrance" value="Baker"/>
+   </properties>
+  </tile>
+  <tile id="54">
+   <properties>
+    <property name="Class" value="Sapling"/>
    </properties>
   </tile>
   <tile id="55">
@@ -475,7 +485,7 @@
  </layer>
  <layer name="Spawns" width="50" height="50">
   <data encoding="base64" compression="zlib">
-   eJzt10EKgCAQhWFjoIJat+wIXaGzVPe/gy6KDLJlw5P/g7dyM6MOaAgAAAAAAADAfzrzrgDwNaUZmFPGLNdcNHYHftpz/w/RcxjsGVXKtefe+tgEe1O7V1/vjb2wtgr0VdIL116jhfMAqsM/FgC0RPiaAt4=
+   eJzt1zEKgDAMheFKQAUdnBw9gqujZ1Hvfwc7VKxgHS2v/B9kaZekaaB1DgAAAAAAAPhPY7kzAPIa/QxMPvoorrmo7A7kU4fzP0T70NkzVCnnHnurYwtri1CNavfq672xJ/ZWgbpSWuHcSzSHfgz0BSgG/1gA0HICuGADKw==
   </data>
  </layer>
 </map>

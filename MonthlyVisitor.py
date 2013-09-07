@@ -966,6 +966,11 @@ class TreeStump(Item):
     can_pick_up = False
     
 @spawn
+class Sapling(Item):
+    can_pick_up = False
+    anim_name = 'Sapling.png'
+
+@spawn
 class BerryPlant(Item):
     name = 'Berry Plant'
     can_pick_up = False
@@ -982,6 +987,10 @@ class BerryPlantEmpty(Item):
 @spawn
 class Berries(Item):
     food_human = 0.05
+
+@spawn
+class Reed(Item):
+    anim_name = 'Reed.png'
 
 @spawn
 class Mushroom(Item):
@@ -1286,6 +1295,7 @@ recipes = [
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
+    Recipe(Stick, {Sapling: 1}, "Break off stick"),
     Recipe(Berries, {BerryPlant: 1}, 'Pick berries', sound=sound_pickup),
     ClothesRecipe([], {Clothes: 1}, 'Wear clothes'),
     #Recipe(Grass Suit
