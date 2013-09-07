@@ -89,7 +89,7 @@
  </tile>
  <tile id="17">
   <properties>
-   <property name="Class" value="Rabbit"/>
+   <property name="Class" value="StrangePlant"/>
   </properties>
  </tile>
  <tile id="18">
