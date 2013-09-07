@@ -1,3 +1,6 @@
+import logging
+logging.getLogger('bacon').addHandler(logging.NullHandler())
+
 from math import floor, sqrt
 import os
 import sys
