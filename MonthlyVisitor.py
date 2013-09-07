@@ -1677,6 +1677,7 @@ for object_layer in tilemap.object_layers:
         elif obj.name == 'Tutorial':
             tutorial = Tutorial(obj.type, Rect(obj.x, obj.y, obj.x + obj.width, obj.y + obj.height))
             tutorial.condition = obj.properties.get('Condition')
+            tutorial.owner = obj.properties.get('Owner')
             tutorials.append(tutorial)
         elif obj.name == 'ShopRegion':
             for villager in villagers:
@@ -1891,6 +1892,9 @@ class Game(bacon.Game):
             if t.rect.contains(player.x, player.y):
                 if t.condition == 'Naked' and not player.naked:
                     continue
+                if t.owner:
+                    if len([v for v in villagers if v.name == t.owner]) == 0:
+                        continue
                 tutorial = t
                 break
 
