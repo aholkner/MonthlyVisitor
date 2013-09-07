@@ -833,7 +833,7 @@ class Villager(Character):
     shop_rect = None
 
     def can_walk(self, tile):
-        if not tile.walkable_villager:
+        if not tile.walkable_villager or not tile.walkable_entrance:
             return False
         return tile.walkable and tile.walkable_villager
 
@@ -996,6 +996,14 @@ class Reed(Item):
 @spawn
 class StrangePlant(Item):
     anim_name = 'StrangePlant.png'
+        
+@spawn
+class VenusFlyTrap(Item):
+    pass
+
+@spawn
+class SuspiciousHerbs(Item):
+    pass
 
 @spawn
 class Mushroom(Item):
@@ -1751,7 +1759,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
