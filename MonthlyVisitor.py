@@ -1367,7 +1367,7 @@ recipes = [
     Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Sheep: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream),
-    Recipe([RawMeat, RawMeat], {Cow: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe([RawMeat, RawMeat, RawMeat], {Cow: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup, tool_durability_effect=0.5),
     #Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(AnimalNet, {Rope: 2, Rock: 2, Vegetable: 1}),

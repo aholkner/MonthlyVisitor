@@ -390,6 +390,11 @@
     <property name="Anim" value="IronRock"/>
    </properties>
   </tile>
+  <tile id="81">
+   <properties>
+    <property name="Class" value="Cleaver"/>
+   </properties>
+  </tile>
   <tile id="102">
    <properties>
     <property name="Class" value="SmallRock"/>
@@ -490,7 +495,7 @@
  </layer>
  <layer name="Spawns" width="50" height="50">
   <data encoding="base64" compression="zlib">
-   eJzt1iESgCAUBFAcggazUW9g9X6eXIoj0aIM8N7M9r9hB0IAAAAAgP+MsfQFUNaSNrCmzFnuXQzxCdC+w9Y/08N/Y8s6ThX2PSu8+a294W7Qqx7eFYCWXGr3Abk=
+   eJzt1jEOQEAQBVCioJDo6LiB1v2c3DZCqWFj9r3k9/MzmexWFQAAAAB8p21yTwB5jekG5pT+lvMu6uYK+U2B9jAE6hLJZi+vKeG/sdw6dj/su/9w5qfWwN2gVCW8KwCRHBSGAeU=
   </data>
  </layer>
 </map>
