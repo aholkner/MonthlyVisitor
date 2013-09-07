@@ -1820,7 +1820,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap-Test.tmx')
+tilemap = tiled.parse('res/Tilemap.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
