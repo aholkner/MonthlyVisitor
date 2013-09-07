@@ -2018,6 +2018,9 @@ class Game(bacon.Game):
 
         self.message = None
         self.message_time = 0.0
+        self.tutorial_food_trigger = False
+        self.tutorial_full_moon = False
+        self.tutorial_end_full_moon = False
 
         self.game_time = 0
 
@@ -2055,11 +2058,17 @@ class Game(bacon.Game):
             if self.full_moon:
                 self.full_moon_time -= bacon.timestep
                 if self.full_moon_time < 0.0:
+                    if not self.tutorial_end_full_moon:
+                        self.show_message("What happened?? Where am I?")
+                        self.tutorial_end_full_moon = True
                     self.full_moon = False
                     player.end_wolf()
                     tween(self, 'curtain', 0.0, 0.3)
             else:
                 self.lunar_cycle += bacon.timestep / MONTH_TIME
+                if self.lunar_cycle >= 0.95 and not self.tutorial_full_moon:
+                    self.show_message("The moon... is calling to me.  I can feel a change... within me...")
+                    self.tutorial_full_moon = True
                 if self.lunar_cycle >= 1.0:
                     self.lunar_cycle = 0.0
                     self.full_moon_time = FULL_MOON_TIME
@@ -2145,6 +2154,9 @@ class Game(bacon.Game):
 
         bacon.set_color(1, 1, 1, 1)
         if player.motive_food < player.motive_food_trigger:
+            if not self.tutorial_food_trigger and not player.is_wolf:
+                game.show_message("I'm so... hungry... must find something to eat!")
+                self.tutorial_food_trigger = True
             if int(self.game_time * 4) % 2 == 0:
                 bacon.set_color(0, 0, 0, 0)
         
@@ -2164,7 +2176,7 @@ class Game(bacon.Game):
     def draw_tutorial(self):
         tutorial = None
         for t in tutorials:
-            if t.rect.contains(player.x, player.y):
+            if not player.wolf and t.rect.contains(player.x, player.y):
                 if t.condition == 'Naked' and not player.naked:
                     continue
                 if t.owner:
@@ -2196,7 +2208,7 @@ class Game(bacon.Game):
             bacon.set_color(1, 1, 1, 1)
             bacon.draw_glyph_layout(tutorial.glyph_layout)
 
-    def show_message(self, message, time=2.0):
+    def show_message(self, message, time=5.0):
         self.message = Tutorial(message, None)
         game.message_time = time
 
