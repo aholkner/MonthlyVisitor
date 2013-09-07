@@ -1097,7 +1097,7 @@ class Bone(Item):
 @spawn
 class RawMeat(Item):
     name = 'Raw Meat'
-    food_wolf = 0.2
+    food_wolf = 0.4
 
 @spawn
 class CookedMeat(Item):
