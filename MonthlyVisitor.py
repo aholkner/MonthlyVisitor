@@ -294,7 +294,9 @@ class Character(Sprite):
     is_wolf = False
     is_dying = False
     motive_food = 1.0
-    motive_food_trigger = 0.8
+    motive_food_trigger_wolf = 0.8
+    motive_food_trigger_human = 0.2
+    motive_food_trigger = motive_food_trigger_human
     max_tilemap_path_size = 500
     distance_player_pickup_animal = 24
 
@@ -638,6 +640,7 @@ class Player(Character):
 
     def start_wolf(self):
         sound_monster.play()
+        motive_food_trigger = motive_food_trigger_wolf
         self.is_wolf = True
         self.naked = False
         self.path = None
@@ -653,6 +656,7 @@ class Player(Character):
 
     def end_wolf(self):
         sound_dawn.play()
+        motive_food_trigger = motive_food_trigger_human
         self.is_wolf = False
         self.path = None
         self.running = False
@@ -2001,6 +2005,8 @@ class Game(bacon.Game):
         self.message = None
         self.message_time = 0.0
 
+        self.game_time = 0
+
     def start(self):
         self.lunar_cycle = 0.0
         self.full_moon_time = 0.0
@@ -2018,6 +2024,7 @@ class Game(bacon.Game):
             return lunar_names[int(self.lunar_cycle * 8.0)]
 
     def on_tick(self):
+        self.game_time += bacon.timestep
         update_tweens()
 
         if self.screen:
@@ -2124,9 +2131,18 @@ class Game(bacon.Game):
 
         bacon.set_color(1, 1, 1, 1)
         if player.motive_food < player.motive_food_trigger:
-            bacon.set_color(1, 0, 0, 1)
-        bacon.draw_string(font_ui, 'Strength: %d%%' % round(player.motive_food * 100), GAME_WIDTH, 96, align=bacon.Alignment.right)
-
+            if int(self.game_time * 4) % 2 == 0:
+                bacon.set_color(0, 0, 0, 0)
+        
+        stamina_size = 86
+        bacon.draw_string(font_ui, 'Stamina', GAME_WIDTH - 2, 96, align=bacon.Alignment.right)
+        bacon.set_color(0.7, 0.7, 0.7, 1.0)
+        x = GAME_WIDTH - stamina_size - 4
+        y = 104
+        Rect(x - 2, y - 2, x + stamina_size + 2, y + 4).fill()
+        bacon.set_color(0.4, 0, 0, 1.0)
+        Rect(x, y, x + stamina_size * player.motive_food, y + 2).fill()
+        
         
         if self.menu:
             self.menu.draw()
