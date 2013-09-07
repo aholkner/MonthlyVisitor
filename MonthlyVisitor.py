@@ -42,6 +42,13 @@ def load_image(name):
         image = image_cache[name] = bacon.Image('res/' + name)
         return image
 
+sound_monster = bacon.Sound('res/sound/monster.ogg')
+sound_roar = bacon.Sound('res/sound/roar.ogg')
+sound_agony1 = bacon.Sound('res/sound/agony1.ogg')
+sound_agony2 = bacon.Sound('res/sound/agony2.ogg')
+sound_footsteps1 = bacon.Sound('res/sound/footsteps1.ogg')
+sound_footsteps2 = bacon.Sound('res/sound/footsteps2.ogg')
+
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
         image = load_image(image)
@@ -333,6 +340,7 @@ class Character(Sprite):
         if self.is_dying:
             return
 
+        sound_agony2.play()
         self.is_dying = True
         self.action = 'death'
         self.path = None
@@ -486,6 +494,8 @@ class Character(Sprite):
             tilemap.remove_sprite(self.target_villager)
             self.target_villager = None
             self.eating_villager = True
+            sound_roar.play()
+            sound_agony1.play()
 
             # Small bite
             self.add_food_motive(0.1)
@@ -572,6 +582,17 @@ class Character(Sprite):
     
 class Player(Character):
     naked = False
+    footsteps_voice = None
+
+    def set_footsteps(self, sound):
+        if self.footsteps_voice:
+            if self.footsteps_voice._sound == sound:
+                return
+            self.footsteps_voice.stop()
+            self.footsteps_voice = None
+        if sound:
+            self.footsteps_voice = bacon.Voice(sound, loop=True)
+            self.footsteps_voice.play()
 
     def can_walk(self, tile):
         if self.naked and not tile.walkable_entrance:
@@ -583,6 +604,7 @@ class Player(Character):
         return tile.walkable
 
     def start_wolf(self):
+        sound_monster.play()
         self.is_wolf = True
         self.path = None
         self.running = True
@@ -1775,6 +1797,14 @@ class Game(bacon.Game):
             if player.motive_food <= 0:
                 player.die()
 
+            if player.action == 'walk':
+                if player.is_wolf:
+                    player.set_footsteps(sound_footsteps2)
+                else:
+                    player.set_footsteps(sound_footsteps1)
+                    player.footsteps_voice.gain = 0.3
+            else:
+                player.set_footsteps(None)
 
         # Camera
         camera.x = int(player.x)
