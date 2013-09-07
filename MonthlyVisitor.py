@@ -57,6 +57,7 @@ sound_craft1 = bacon.Sound('res/sound/craft1.ogg')
 sound_eat = bacon.Sound('res/sound/eat.ogg')
 sound_chime = bacon.Sound('res/sound/chime.ogg')
 sound_dawn = bacon.Sound('res/sound/dawn.ogg')
+sound_scream = bacon.Sound('res/sound/scream.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -1165,9 +1166,9 @@ recipes = [
     Recipe(Fire, {Wood: 2, Coal: 1}),
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
-    Recipe(RawMeat, {Chicken: 1}, 'Kill for meat'),
-    Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat'),
-    Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
+    Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
     Recipe(Berries, {BerryPlant: 1}, 'Pick berries', sound=sound_pickup),
