@@ -1254,9 +1254,8 @@ class Recipe(object):
     :param inputs: dict of class to count
     '''
     sound = sound_craft1
-    tool_durability_effect = 0.5
 
-    def __init__(self, output, inputs, text=None, sound=None, tool_durability_effect=0.5):
+    def __init__(self, output, inputs, text=None, sound=None, tool_durability_effect=0.5, outputs_to_inventory=True):
         if not isinstance(output, collections.Iterable):
             output = [output]
         self.outputs = output
@@ -1267,6 +1266,7 @@ class Recipe(object):
         if sound:
             self.sound = sound
         self.tool_durability_effect = tool_durability_effect
+        self.outputs_to_inventory = outputs_to_inventory
           
     def is_input(self, input):
         return input.__class__ in self.inputs
@@ -1297,10 +1297,10 @@ class ClothesRecipe(Recipe):
         player.naked = False
 
 recipes = [
-    Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood'),
-    Recipe([SmallIronRock, SmallIronRock, SmallIronRock], {Pick: 1, IronRock: 1}, 'Break up large iron rock'),
-    Recipe(Axe, {Stick: 1, Rock: 1}, tool_durability_effect=0.25),
-    Recipe(Pick, {Stick: 1, Iron: 1}, tool_durability_effect=0.25),
+    Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood', tool_durability_effect=0.25, outputs_to_inventory=False),
+    Recipe([SmallIronRock, SmallIronRock, SmallIronRock], {Pick: 1, IronRock: 1}, 'Break up large iron rock', tool_durability_effect=0.25, outputs_to_inventory=False),
+    Recipe(Axe, {Stick: 1, Rock: 1}),
+    Recipe(Pick, {Stick: 1, Iron: 1}),
     Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
     Recipe(Fire, {Wood: 2, Coal: 1}),
     Recipe(Fence, {Wood: 2}),
@@ -1662,7 +1662,10 @@ class Inventory(object):
         for output in recipe.outputs:
             crafted_item = output(output.get_default_anim(), 0, 0)
             self.items.insert(slot_index, crafted_item)
-            new_items.append(crafted_item)
+            if recipe.outputs_to_inventory:
+                new_items.append(crafted_item)
+            else:
+                self.drop(crafted_item, player.get_drop_tile())
 
         for item_class, count in recipe.inputs.items():
             for i in range(count):
