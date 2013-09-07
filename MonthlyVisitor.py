@@ -589,6 +589,17 @@ class Character(Sprite):
 
         return None
 
+    def get_behind_tile(self):
+        dx = dy = 0
+        if self.facing == 'left':
+            dx = 32
+        elif self.facing == 'right':
+            dx = -32
+        elif self.facing == 'up':
+            dy = 32
+        else:
+            dy = -32
+        return tilemap.get_tile_at(self.x + dx, self.y + dy)
     
 class Player(Character):
     naked = False
@@ -987,24 +998,10 @@ class Fence(Item):
         self.update_fence_and_adjacent()
 
         # Move player into walkable tile; try backward facing direction first
-        dx = dy = 0
-        if player.facing == 'left':
-            dx = 32
-        elif player.facing == 'right':
-            dx = -32
-        elif player.facing == 'up':
-            dy = 32
-        else:
-            dy = -32
-        if tilemap.get_tile_at(player.x + dx, player.y + dy).walkable:
-            player.x += dx
-            player.y += dy
-        else:
-            # Fall back on any nearby tile that's free
-            tile = player.get_drop_tile()
-            if tile:
-                player.x = tile.rect.center_x
-                player.y = tile.rect.center_y
+        tile = player.get_behind_tile()
+        if tile.walkable:
+            player.x = tile.rect.center_x
+            player.y = tile.rect.center_y        
         player.path = []
         tilemap.update_sprite_position(player)
         sound_craft1.play()
@@ -1451,6 +1448,10 @@ def show_craft_menu(item, x, y):
 
     if item in inventory.items:
         tile = player.get_drop_tile()
+        if isinstance(item, Fence) and tile is tilemap.get_tile_at(player.x, player.y):
+            # Ensure position behind player is free if drop tile is player
+            if not player.get_behind_tile().walkable:
+                tile = None
         if tile:
             game.menu.add('Drop %s' % item.get_name(), DropAction(item))
         else:
@@ -1599,7 +1600,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap.tmx')
+tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
