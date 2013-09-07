@@ -334,17 +334,17 @@
   <image source="Tileset-Outdoor2.png" width="512" height="512"/>
   <tile id="0">
    <properties>
-    <property name="Class" value="SmallIronRock"/>
+    <property name="Class" value="IronOre"/>
    </properties>
   </tile>
   <tile id="3">
    <properties>
-    <property name="Class" value="SmallIronRock"/>
+    <property name="Class" value="IronOre"/>
    </properties>
   </tile>
   <tile id="5">
    <properties>
-    <property name="SmallCoalRock" value=""/>
+    <property name="Class" value="Coal"/>
    </properties>
   </tile>
   <tile id="32">
@@ -365,9 +365,40 @@
     <property name="Class" value="IronRock"/>
    </properties>
   </tile>
+  <tile id="37">
+   <properties>
+    <property name="Anim" value="CoalRock.png"/>
+    <property name="Class" value="CoalRock"/>
+   </properties>
+  </tile>
   <tile id="38">
    <properties>
-    <property name="Anim" value="CoalRock"/>
+    <property name="Anim" value="CoalRock2.png"/>
+    <property name="Class" value="CoalRock"/>
+   </properties>
+  </tile>
+  <tile id="39">
+   <properties>
+    <property name="Anim" value="CoalRock2.png"/>
+    <property name="Class" value="CoalRock"/>
+   </properties>
+  </tile>
+  <tile id="41">
+   <properties>
+    <property name="Anim" value="Rock1.png"/>
+    <property name="Class" value="Boulder"/>
+   </properties>
+  </tile>
+  <tile id="42">
+   <properties>
+    <property name="Anim" value="Rock2.png"/>
+    <property name="Class" value="Boulder"/>
+   </properties>
+  </tile>
+  <tile id="43">
+   <properties>
+    <property name="Anim" value="Rock2.png"/>
+    <property name="Class" value="Boulder"/>
    </properties>
   </tile>
   <tile id="48">
@@ -397,7 +428,7 @@
   </tile>
   <tile id="102">
    <properties>
-    <property name="Class" value="SmallRock"/>
+    <property name="Class" value="Rock"/>
    </properties>
   </tile>
  </tileset>
@@ -495,7 +526,7 @@
  </layer>
  <layer name="Spawns" width="50" height="50">
   <data encoding="base64" compression="zlib">
-   eJzt1jEOQEAQBVCioJDo6LiB1v2c3DZCqWFj9r3k9/MzmexWFQAAAAB8p21yTwB5jekG5pT+lvMu6uYK+U2B9jAE6hLJZi+vKeG/sdw6dj/su/9w5qfWwN2gVCW8KwCRHBSGAeU=
+   eJzt1jEKgDAQRNFICi0EO+30BraeRwUV9RSe3G3ElCLEsPE/GEg5yxISYwAAAAAAAIDvpDZ0AyCsUu5ALcmdXPcisXcQXuXsYZXzJtmV7qZQ2jt2HXvx5g//jcaZMVM476Gw81Ototl66TpIRkWd35hkvlmyRD4n/PnDuwIAMTkBy1sFnA==
   </data>
  </layer>
 </map>

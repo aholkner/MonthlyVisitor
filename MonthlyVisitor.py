@@ -1017,19 +1017,7 @@ class Wood(Item):
     name = 'Wood'
 
 @spawn
-class Rock(Item):
-    pass
-
-@spawn
-class SmallRock(Item):
-    pass
-
-@spawn
-class SmallIronRock(Item):
-    pass
-
-@spawn
-class IronRock(Item):
+class Boulder(Item):
     walkable = False
     can_pick_up = False
     path_cost_wolf = 99999
@@ -1038,13 +1026,32 @@ class IronRock(Item):
         self.destroy()
 
 @spawn
-class SmallCoalRock(Item):
-    pass
+class Rock(Item):
+    name = 'Rock'
 
+@spawn
+class IronOre(Item):
+    name = 'Iron Ore'
+
+@spawn
+class IronRock(Item):
+    name = 'Iron Rock'
+    walkable = False
+    can_pick_up = False
+    path_cost_wolf = 99999
+
+    def on_used_in_recipe(self, recipe):
+        self.destroy()
 
 @spawn
 class CoalRock(Item):
-    pass
+    name = 'Coal Rock'
+    walkable = False
+    can_pick_up = False
+    path_cost_wolf = 99999
+
+    def on_used_in_recipe(self, recipe):
+        self.destroy()
 
 
 @spawn
@@ -1355,19 +1362,21 @@ class ClothesRecipe(Recipe):
 
 recipes = [
     Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood', tool_durability_effect=0.25, outputs_to_inventory=False),
-    Recipe([SmallIronRock, SmallIronRock, SmallIronRock], {Pick: 1, IronRock: 1}, 'Break up large iron rock', tool_durability_effect=0.25, outputs_to_inventory=False),
-	Recipe([Rock, Rock], {Pick: 1, SmallRock: 1}, 'Break up large iron rock', tool_durability_effect=0.25, outputs_to_inventory=False),
+    Recipe([Coal], {Pick: 1, CoalRock: 1}, 'Mine for coal', tool_durability_effect=0.25),
+    Recipe([IronOre, IronOre, IronOre], {Pick: 1, IronRock: 1}, 'Mine for iron ore', tool_durability_effect=0.25, outputs_to_inventory=False),
+	Recipe([Rock, Rock], {Pick: 1, Boulder: 1}, 'Smash boulder', tool_durability_effect=0.5, outputs_to_inventory=False),
+    Recipe([Iron], {Pick: 1, IronOre: 2}, 'Forge Iron', tool_durability_effect=0.25),
     Recipe(Axe, {Stick: 1, Rock: 1}),
     Recipe(Pick, {Stick: 1, Iron: 1}),
-    Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
+    Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}, tool_durability_effect=0.2),
     Recipe(Cleaver, {Stick: 1, Steel: 1}),
     Recipe(Fire, {Wood: 2, Coal: 1}, outputs_to_inventory=False),
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
     Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
-    Recipe([RawMeat, RawMeat], {Sheep: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream),
-    Recipe([RawMeat, RawMeat, RawMeat], {Cow: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe([RawMeat, RawMeat], {Sheep: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream, tool_durability_effect=0.25),
+    Recipe([RawMeat, RawMeat, RawMeat], {Cow: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream, tool_durability_effect=0.25),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup, tool_durability_effect=0.5),
     #Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(AnimalNet, {Rope: 2, Rock: 2, Vegetable: 1}),
