@@ -708,9 +708,9 @@ class Player(Character):
 
         # Check if we arrived on an animal
         for animal in animals:
-            if distance(self, animal) < self.distance_player_pickup_animal:
+            if animal.can_pick_up and distance(self, animal) < self.distance_player_pickup_animal:
                 if not self.target_item and not inventory.is_full:
-                    # Only pick up the animal if it we weren't targetting anything.
+                    # Only pick up the animal if we weren't targetting anything.
                     item = animal.item_cls(animal.item_cls.get_default_anim(), 0, 0)
                     inventory.add_item(item)
                     tilemap.remove_sprite(animal)
@@ -727,6 +727,7 @@ class Player(Character):
 class Animal(Character):
     walk_speed = 50
     run_speed = 110
+    can_pick_up = False
 
     run_cooldown = 0
     run_cooldown_time = 1.5 # How long to run before exhaustion
@@ -797,15 +798,15 @@ class Animal(Character):
 
 
     def on_collide(self, tile):
-        if self.running:
-            self.cooldown = 0
-
+        self.cooldown = 0.1
+        self.run_cooldown = 0
 
 
             
 class ChickenAnimal(Animal):
     walk_speed = 50
     run_speed = 110
+    can_pick_up = True
 
     run_cooldown = 0
     run_cooldown_time = 1.5 # How long to run before exhaustion

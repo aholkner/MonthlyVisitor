@@ -421,7 +421,7 @@
   </data>
  </layer>
  <objectgroup name="Objects" width="300" height="220">
-  <object name="PlayerStart" gid="539" x="6064" y="6895"/>
+  <object name="PlayerStart" gid="539" x="6688" y="3325"/>
   <object name="Villager" type="Baker" gid="793" x="5820" y="5516"/>
   <object name="Villager" type="Farmer" gid="793" x="7128" y="5884"/>
   <object name="Villager" type="Blacksmith" gid="793" x="7241" y="4681"/>
