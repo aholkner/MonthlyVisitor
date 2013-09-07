@@ -1097,7 +1097,7 @@ class Tool(Item):
     is_consumed_in_recipe = False
     
     def on_used_in_recipe(self, recipe):
-        super().on_used_in_recipe(recipe)
+        super(Tool, self).on_used_in_recipe(recipe)
         self.durability -= recipe.tool_durability_effect
         if self.durability <= 0:
             self.destroy()
@@ -1124,7 +1124,7 @@ class Fire(Item):
     is_consumed_in_recipe = False
     
     def on_used_in_recipe(self, recipe):
-        super().on_used_in_recipe(recipe)
+        super(Fire, self).on_used_in_recipe(recipe)
         self.durability -= recipe.tool_durability_effect
         if self.durability <= 0:
             self.__class__ = UsedFire
@@ -1252,7 +1252,7 @@ class Snare(Item):
     def destroy(self):
         if self in snares:
             snares.remove(self)
-        return super().destroy()
+        return super(Snare, self).destroy()
 
     def on_dropped(self, tile):
         super(Snare, self).on_dropped(tile)
@@ -1295,14 +1295,14 @@ class AnimalItem(Item):
             self.snare.destroy()
             self.snare = None
         spawn_blood(player.x, player.y)
-        return super().on_consumed()
+        return super(AnimalItem, self).on_consumed()
 
     def on_used_in_recipe(self, recipe):
         if self.snare:
             self.snare.destroy()
         spawn_blood(player.x, player.y)
         self.destroy()
-        return super().on_used_in_recipe(recipe)
+        return super(AnimalItem, self).on_used_in_recipe(recipe)
 
 
 @spawn
