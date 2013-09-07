@@ -2176,7 +2176,7 @@ class Game(bacon.Game):
     def draw_tutorial(self):
         tutorial = None
         for t in tutorials:
-            if not player.wolf and t.rect.contains(player.x, player.y):
+            if not player.is_wolf and t.rect.contains(player.x, player.y):
                 if t.condition == 'Naked' and not player.naked:
                     continue
                 if t.owner:
