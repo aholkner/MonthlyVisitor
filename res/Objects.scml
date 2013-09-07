@@ -12,6 +12,7 @@
         <file id="8" name="IronRock3.png" width="35" height="62" pivot_x="0.472079" pivot_y="0.108411"/>
         <file id="9" name="Sapling.png" width="64" height="96" pivot_x="0.475994" pivot_y="0.0676263"/>
         <file id="10" name="Reed.png" width="32" height="64" pivot_x="0.527315" pivot_y="0.197797"/>
+        <file id="11" name="StrangePlant.png" width="32" height="64" pivot_x="0.527315" pivot_y="0.190574"/>
     </folder>
     <entity id="0" name="Tree1">
         <animation id="0" name="NewAnimation" length="1000">
@@ -28,6 +29,7 @@
                     <object_ref id="8" name="IronRock3" folder="0" file="8" abs_x="589.718643" abs_y="5.546228" abs_pivot_x="0.472079" abs_pivot_y="0.108411" abs_angle="360" abs_scale_x="1" abs_scale_y="1" abs_a="1" timeline="8" key="0" z_index="8"/>
                     <object_ref id="9" name="Sapling" folder="0" file="9" abs_x="699.554522" abs_y="2.310308" abs_pivot_x="0.475994" abs_pivot_y="0.067626" abs_angle="360" abs_scale_x="1" abs_scale_y="1" abs_a="1" timeline="9" key="0" z_index="9"/>
                     <object_ref id="10" name="Reed" folder="0" file="10" abs_x="784.479727" abs_y="0.771687" abs_pivot_x="0.527315" abs_pivot_y="0.197797" abs_angle="360" abs_scale_x="1" abs_scale_y="1" abs_a="1" timeline="10" key="0" z_index="10"/>
+                    <object_ref id="11" name="StrangePlant" folder="0" file="11" abs_x="834.714469" abs_y="1.717876" abs_pivot_x="0.527315" abs_pivot_y="0.190574" abs_angle="360" abs_scale_x="1" abs_scale_y="1" abs_a="1" timeline="11" key="0" z_index="11"/>
                 </key>
             </mainline>
             <timeline id="0" name="Tree1">
@@ -83,6 +85,11 @@
             <timeline id="10" name="Reed">
                 <key id="0" spin="0">
                     <object folder="0" file="10" x="784.479727" y="0.771687"/>
+                </key>
+            </timeline>
+            <timeline id="11" name="StrangePlant">
+                <key id="0" spin="0">
+                    <object folder="0" file="11" x="834.714469" y="1.717876"/>
                 </key>
             </timeline>
         </animation>

@@ -993,6 +993,10 @@ class Reed(Item):
     anim_name = 'Reed.png'
 
 @spawn
+class StrangePlant(Item):
+    anim_name = 'StrangePlant.png'
+
+@spawn
 class Mushroom(Item):
     food_human = 0.05
 
