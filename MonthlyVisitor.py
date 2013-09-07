@@ -58,6 +58,7 @@ sound_eat = bacon.Sound('res/sound/eat.ogg')
 sound_chime = bacon.Sound('res/sound/chime.ogg')
 sound_dawn = bacon.Sound('res/sound/dawn.ogg')
 sound_scream = bacon.Sound('res/sound/scream.ogg')
+sound_attackfence1 = bacon.Sound('res/sound/attackfence1.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -604,6 +605,7 @@ class Character(Sprite):
 class Player(Character):
     naked = False
     footsteps_voice = None
+    attack_voice = None
 
     def set_footsteps(self, sound):
         if self.footsteps_voice:
@@ -614,6 +616,13 @@ class Player(Character):
         if sound:
             self.footsteps_voice = bacon.Voice(sound, loop=True)
             self.footsteps_voice.play()
+            
+
+    def set_attack_sound(self, sound):
+        if self.attack_voice and self.attack_voice.playing:
+            return
+        self.attack_voice = bacon.Voice(sound)
+        self.attack_voice.play()
 
     def can_walk(self, tile):
         if self.naked and not tile.walkable_entrance:
@@ -1039,6 +1048,7 @@ class Fence(Item):
         return False
 
     def on_attack(self):
+        player.set_attack_sound(sound_attackfence1)
         self.hp -= bacon.timestep
         if self.hp <= 0:
             self.destroy()
