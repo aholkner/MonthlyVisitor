@@ -59,6 +59,7 @@ sound_chime = bacon.Sound('res/sound/chime.ogg')
 sound_dawn = bacon.Sound('res/sound/dawn.ogg')
 sound_scream = bacon.Sound('res/sound/scream.ogg')
 sound_attackfence1 = bacon.Sound('res/sound/attackfence1.ogg')
+sound_destroyfence1 = bacon.Sound('res/sound/destroyfence1.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -1051,6 +1052,7 @@ class Fence(Item):
         player.set_attack_sound(sound_attackfence1)
         self.hp -= bacon.timestep
         if self.hp <= 0:
+            sound_destroyfence1.play()
             self.destroy()
 
 @spawn
