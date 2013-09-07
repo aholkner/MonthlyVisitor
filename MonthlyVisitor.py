@@ -1331,14 +1331,14 @@ class Chicken(AnimalItem):
 @spawn
 class Sheep(AnimalItem):
     animal_cls = SheepAnimal
-    food_wolf = 0.6
+    food_wolf = 1.0
     animal_anims = sheep_anims
     can_pick_up = False
     
 @spawn
 class Cow(AnimalItem):
     animal_cls = CowAnimal
-    food_wolf = 0.6
+    food_wolf = 1.0
     animal_anims = cow_anims
     can_pick_up = False
 
