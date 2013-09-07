@@ -1856,6 +1856,7 @@ StrongFence.fence_anims[''] = StrongFence.get_default_anim()
 SteelFence.fence_anims[''] = SteelFence.get_default_anim()
 
 class Tutorial(object):
+    shown = False
     def __init__(self, text, rect):
         self.text = text
         self.rect = rect
@@ -2170,6 +2171,9 @@ class Game(bacon.Game):
             tutorial = self.message
 
         if tutorial != self.tutorial:
+            if self.tutorial and self.tutorial in tutorials:
+                tutorials.remove(self.tutorial)
+
             self.tutorial = tutorial
             if tutorial:
                 sound_chime.play()
