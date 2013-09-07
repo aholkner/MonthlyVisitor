@@ -553,6 +553,11 @@ class Character(Sprite):
                         self.target_villager = villager
                         return
 
+                # Couldn't path in direction of any villager, move to nearest waypoint instead
+                waypoints.sort(key = lambda v:distance(v, self))
+                if self.walk_to_distant_object(waypoints[0]):
+                    return
+
         if not self.path:
             # Random walk
             dx = random.randrange(-3, 3) * 32
@@ -608,6 +613,7 @@ class Character(Sprite):
         return tilemap.get_tile_at(self.x + dx, self.y + dy)
     
 class Player(Character):
+    run_speed = 320
     naked = False
     footsteps_voice = None
     attack_voice = None
@@ -640,7 +646,7 @@ class Player(Character):
 
     def start_wolf(self):
         sound_monster.play()
-        motive_food_trigger = motive_food_trigger_wolf
+        self.motive_food_trigger = self.motive_food_trigger_wolf
         self.is_wolf = True
         self.naked = False
         self.path = None
@@ -656,7 +662,7 @@ class Player(Character):
 
     def end_wolf(self):
         sound_dawn.play()
-        motive_food_trigger = motive_food_trigger_human
+        self.motive_food_trigger = self.motive_food_trigger_human
         self.is_wolf = False
         self.path = None
         self.running = False
@@ -999,6 +1005,7 @@ class Reed(Item):
 
 @spawn
 class StrangePlant(Item):
+    name = 'Rock Flower'
     anim_name = 'StrangePlant.png'
         
 @spawn
@@ -2103,11 +2110,11 @@ class Game(bacon.Game):
         tilemap.draw(camera.get_bounds())
                 
         bacon.set_color(0, 0, 1, 1)
-        tilemap.get_tile_rect(player.x, player.y).draw()
+        #tilemap.get_tile_rect(player.x, player.y).draw()
         
         bacon.set_color(1, 0, 0, 1)
         
-        tilemap.get_bounds().draw()
+        #tilemap.get_bounds().draw()
         
         
     def draw_ui(self):
