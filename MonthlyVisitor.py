@@ -56,6 +56,7 @@ sound_growl1 = bacon.Sound('res/sound/growl1.ogg')
 sound_craft1 = bacon.Sound('res/sound/craft1.ogg')
 sound_eat = bacon.Sound('res/sound/eat.ogg')
 sound_chime = bacon.Sound('res/sound/chime.ogg')
+sound_dawn = bacon.Sound('res/sound/dawn.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -623,6 +624,7 @@ class Player(Character):
             inventory.drop(item, self.get_drop_tile())
 
     def end_wolf(self):
+        sound_dawn.play()
         self.is_wolf = False
         self.path = None
         self.running = False
@@ -1759,6 +1761,7 @@ class Game(bacon.Game):
 
         self.curtain = 0.0
         player.motive_food = 1.0
+        sound_dawn.play()
 
     @property
     def lunar_name(self):
