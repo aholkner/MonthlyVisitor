@@ -16,7 +16,7 @@ GAME_WIDTH = 800
 GAME_HEIGHT = 500
 
 # See Game.on_key for cheats
-ENABLE_CHEATS = True
+ENABLE_CHEATS = False
 try:
     if sys.frozen:
         ENABLE_CHEATS = False
@@ -1953,7 +1953,7 @@ class GameStartScreen(bacon.Game):
         self.moon.angle = 0.0
 
         bacon.clear(0, 0, 0, 1)
-        bacon.set_color(1, 1, 1, 1)
+        bacon.set_color(0.6, 0.6, 0.6, 1.0)
         self.moon.draw()
 
         bacon.set_color(1, 0, 0, 1)
@@ -1963,10 +1963,16 @@ class GameStartScreen(bacon.Game):
                           vertical_align = bacon.VerticalAlignment.center)
 
         bacon.set_color(1, 1, 1, 1)
-        bacon.draw_string(font_ui, 'Click to start', 
-                          0, int(GAME_HEIGHT * 0.75), GAME_WIDTH,
+        bacon.draw_string(font_ui, 'A game by Alex Holkner and Amanda Schofield', 
+                          0, GAME_HEIGHT / 2 + 24, GAME_WIDTH,
                           align = bacon.Alignment.center,
                           vertical_align = bacon.VerticalAlignment.center)
+
+        bacon.set_color(1, 1, 1, 1)
+        bacon.draw_string(font_ui, 'Click to start', 
+                          0, GAME_HEIGHT - 4, GAME_WIDTH,
+                          align = bacon.Alignment.center,
+                          vertical_align = bacon.VerticalAlignment.bottom)
 
     def on_mouse_button(self, button, pressed):
         game.screen = None
