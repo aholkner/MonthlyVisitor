@@ -142,6 +142,11 @@
    <property name="Class" value="Rope"/>
   </properties>
  </tile>
+ <tile id="31">
+  <properties>
+   <property name="Class" value="SteelFence"/>
+  </properties>
+ </tile>
  <tile id="32">
   <properties>
    <property name="Blood" value=""/>

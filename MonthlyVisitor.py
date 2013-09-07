@@ -1004,6 +1004,7 @@ class Fence(Item):
                 player.y = tile.rect.center_y
         player.path = []
         tilemap.update_sprite_position(player)
+        sound_craft1.play()
 
     def update_fence_and_adjacent(self):
         adjacent = [
@@ -1047,6 +1048,14 @@ class StrongFence(Fence):
     name = 'Strong Fence'
     path_cost_wolf = 10
     hp = 2.0
+    fence_anims = {}
+
+    
+@spawn
+class SteelFence(Fence):
+    name = 'Steel Fence'
+    path_cost_wolf = 10
+    hp = 8.0
     fence_anims = {}
 
 @spawn
@@ -1166,6 +1175,7 @@ recipes = [
     Recipe(Fire, {Wood: 2, Coal: 1}),
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
+    Recipe(SteelFence, {Steel: 1}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat', sound=sound_scream),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
@@ -1601,6 +1611,9 @@ for tileset in tilemap.tilesets:
             if 'StrongFence' in props:
                 fmt = props['StrongFence']
                 StrongFence.fence_anims[fmt] = Anim([Frame(image, 16, 16)])
+            if 'SteelFence' in props:
+                fmt = props['SteelFence']
+                SteelFence.fence_anims[fmt] = Anim([Frame(image, 16, 16)])
             if 'Blood' in props:
                 blood_images.append(image)
             if 'BloodDribble' in props:
@@ -1608,6 +1621,7 @@ for tileset in tilemap.tilesets:
 
 Fence.fence_anims[''] = Fence.get_default_anim()
 StrongFence.fence_anims[''] = StrongFence.get_default_anim()
+SteelFence.fence_anims[''] = SteelFence.get_default_anim()
 
 class Tutorial(object):
     def __init__(self, text, rect):

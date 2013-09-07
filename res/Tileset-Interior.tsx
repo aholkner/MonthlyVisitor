@@ -154,13 +154,88 @@
    <property name="StrongFence" value="UL"/>
   </properties>
  </tile>
+ <tile id="125">
+  <properties>
+   <property name="SteelFence" value="R"/>
+  </properties>
+ </tile>
+ <tile id="126">
+  <properties>
+   <property name="SteelFence" value="LR"/>
+  </properties>
+ </tile>
+ <tile id="127">
+  <properties>
+   <property name="SteelFence" value="L"/>
+  </properties>
+ </tile>
  <tile id="128" terrain=",,,0"/>
  <tile id="129" terrain=",,0,0"/>
  <tile id="130" terrain=",,0,"/>
+ <tile id="141">
+  <properties>
+   <property name="SteelFence" value="U"/>
+  </properties>
+ </tile>
+ <tile id="142">
+  <properties>
+   <property name="SteelFence" value="UD"/>
+  </properties>
+ </tile>
+ <tile id="143">
+  <properties>
+   <property name="SteelFence" value="D"/>
+  </properties>
+ </tile>
  <tile id="144" terrain=",0,,0"/>
  <tile id="145" terrain="0,0,0,0"/>
  <tile id="146" terrain="0,,0,"/>
+ <tile id="157">
+  <properties>
+   <property name="SteelFence" value="DR"/>
+  </properties>
+ </tile>
+ <tile id="158">
+  <properties>
+   <property name="SteelFence" value="DLR"/>
+  </properties>
+ </tile>
+ <tile id="159">
+  <properties>
+   <property name="SteelFence" value="DL"/>
+  </properties>
+ </tile>
  <tile id="160" terrain=",0,,"/>
  <tile id="161" terrain="0,0,,"/>
  <tile id="162" terrain="0,,,"/>
+ <tile id="173">
+  <properties>
+   <property name="SteelFence" value="UDR"/>
+  </properties>
+ </tile>
+ <tile id="174">
+  <properties>
+   <property name="SteelFence" value="UDLR"/>
+  </properties>
+ </tile>
+ <tile id="175">
+  <properties>
+   <property name="SteelFence" value="UDL"/>
+  </properties>
+ </tile>
+ <tile id="189">
+  <properties>
+   <property name="SteelFence" value="UR"/>
+  </properties>
+ </tile>
+ <tile id="190">
+  <properties>
+   <property name="SteelFence" value="ULR"/>
+  </properties>
+ </tile>
+ <tile id="191">
+  <properties>
+   <property name="SteelFence" value="UL"/>
+  </properties>
+ </tile>
 </tileset>
