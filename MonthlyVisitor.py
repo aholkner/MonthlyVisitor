@@ -360,6 +360,7 @@ class Character(Sprite):
         self.looping = False
         self.time = 0
         self.update_anim()
+        game.menu = None
 
     def on_anim_finished(self):
         if self.is_dying:
