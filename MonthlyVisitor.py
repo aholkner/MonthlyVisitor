@@ -154,6 +154,7 @@ default_player_clothing = ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde
 naked_player_clothing = ['HairBlonde']
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
 sheep_anims = lpc_anims('Sheep.png', 4, 4)
+cow_anims = lpc_anims('Cow.png', 4, 4)
 
 def distance(a, b):
     dx = a.x - b.x
@@ -812,6 +813,18 @@ class SheepAnimal(Animal):
     snare_attract_radius = 128
     snare_catch_radius = 8
 
+    
+class CowAnimal(Animal):
+    walk_speed = 50
+    run_speed = 170
+
+    run_cooldown = 0
+    run_cooldown_time = 999 # How long to run before exhaustion
+    danger_radius = 200
+
+    snare_attract_radius = 128
+    snare_catch_radius = 8
+
 
 class Villager(Character):
     walk_speed = 50
@@ -1163,6 +1176,12 @@ class Sheep(AnimalItem):
     animal_cls = SheepAnimal
     food_wolf = 0.6
     animal_anims = sheep_anims
+    
+@spawn
+class Cow(AnimalItem):
+    animal_cls = CowAnimal
+    food_wolf = 0.6
+    animal_anims = cow_anims
 
 @spawn
 class Rabbit(AnimalItem):
@@ -1227,6 +1246,7 @@ recipes = [
     Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Sheep: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe([RawMeat, RawMeat], {Cow: 1}, 'Kill for meat', sound=sound_scream),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
@@ -1707,6 +1727,11 @@ for layer in tilemap.layers:
                 if class_name == 'Sheep':
                     animal = SheepAnimal(sheep_anims, tile.rect.center_x, tile.rect.center_y)
                     animal.item_cls = Sheep
+                    animals.append(animal)
+                    tilemap.add_sprite(animal)
+                if class_name == 'Cow':
+                    animal = CowAnimal(cow_anims, tile.rect.center_x, tile.rect.center_y)
+                    animal.item_cls = Cow
                     animals.append(animal)
                     tilemap.add_sprite(animal)
                 elif class_name:
