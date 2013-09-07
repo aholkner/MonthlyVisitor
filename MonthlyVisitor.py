@@ -52,9 +52,10 @@ sound_crunch1 = bacon.Sound('res/sound/crunch1.ogg')
 sound_pickup = bacon.Sound('res/sound/pickup.ogg')
 sound_drop = bacon.Sound('res/sound/drop.ogg')
 sound_click = bacon.Sound('res/sound/click.ogg')
-sound_growl1 = bacon.Sound('res/sound/growl1.ogg')  # TODO
+sound_growl1 = bacon.Sound('res/sound/growl1.ogg')
 sound_craft1 = bacon.Sound('res/sound/craft1.ogg')
 sound_eat = bacon.Sound('res/sound/eat.ogg')
+sound_chime = bacon.Sound('res/sound/chime.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -1114,7 +1115,7 @@ class Recipe(object):
     '''
     sound = sound_craft1
 
-    def __init__(self, output, inputs, text=None):
+    def __init__(self, output, inputs, text=None, sound=None):
         if not isinstance(output, collections.Iterable):
             output = [output]
         self.outputs = output
@@ -1122,6 +1123,8 @@ class Recipe(object):
         self.text = text
         if output:
             self.name = output[0].__name__
+        if sound:
+            self.sound = sound
           
     def is_input(self, input):
         return input.__class__ in self.inputs
@@ -1165,7 +1168,7 @@ recipes = [
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat'),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
-    Recipe(Berries, {BerryPlant: 1}, 'Pick berries'),
+    Recipe(Berries, {BerryPlant: 1}, 'Pick berries', sound=sound_pickup),
     ClothesRecipe([], {Clothes: 1}, 'Wear clothes'),
     #Recipe(Grass Suit
     #Recipe(FishingRod)
@@ -1679,6 +1682,9 @@ for object_layer in tilemap.object_layers:
             
 
 class GameStartScreen(bacon.Game):
+    def __init__(self):
+        sound_growl1.play()
+
     def on_tick(self):
         self.moon = moon.Moon()
         self.moon.x = GAME_WIDTH / 2
@@ -1890,6 +1896,7 @@ class Game(bacon.Game):
         if tutorial != self.tutorial:
             self.tutorial = tutorial
             if tutorial:
+                sound_chime.play()
                 style = bacon.Style(font_ui)
                 runs = [bacon.GlyphRun(style, tutorial.text)]
                 tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 96, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
