@@ -83,7 +83,7 @@ def lpc_anims(image, cols, rows):
     down = sheet.cells[2]
     right = sheet.cells[3]
     def make_anim(images):
-        anim = Anim([Frame(image, image.width / 2, image.height - 10) for image in images])
+        anim = Anim([Frame(image, image.width / 2, image.height - 4) for image in images])
         anim.time_per_frame = 0.1
         return anim
 
@@ -153,7 +153,7 @@ clothing_anims = dict(
 default_player_clothing = ['BrownShoes', 'GreenPants', 'WhiteShirt', 'HairBlonde']
 naked_player_clothing = ['HairBlonde']
 chicken_anims = lpc_anims('Chicken.png', 4, 4)
-
+sheep_anims = lpc_anims('Sheep.png', 4, 4)
 
 def distance(a, b):
     dx = a.x - b.x
@@ -746,6 +746,7 @@ class Animal(Character):
                     dx = -dx
                 if player.y > self.y:
                     dy = -dy
+                self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
                 self.wait(random.randrange(1, 4) / 4.0)
             else:
                 if self.running:
@@ -784,6 +785,32 @@ class Animal(Character):
     def on_collide(self, tile):
         if self.running:
             self.cooldown = 0
+
+
+
+            
+class ChickenAnimal(Animal):
+    walk_speed = 50
+    run_speed = 110
+
+    run_cooldown = 0
+    run_cooldown_time = 1.5 # How long to run before exhaustion
+    danger_radius = 100
+
+    snare_attract_radius = 128
+    snare_catch_radius = 8
+
+
+class SheepAnimal(Animal):
+    walk_speed = 50
+    run_speed = 170
+
+    run_cooldown = 0
+    run_cooldown_time = 999 # How long to run before exhaustion
+    danger_radius = 200
+
+    snare_attract_radius = 128
+    snare_catch_radius = 8
 
 
 class Villager(Character):
@@ -1110,12 +1137,13 @@ class Snare(Item):
         except ValueError:
             pass
 
-@spawn
-class Chicken(Item):
+class AnimalItem(Item):
     food_wolf = 0.3
+    animal_anims = None
+    animal_cls = None
 
     def on_dropped(self, tile):
-        animal = Animal(chicken_anims, tile.rect.center_x, tile.rect.center_y)
+        animal = self.animal_cls(self.animal_anims, tile.rect.center_x, tile.rect.center_y)
         animal.item_cls = self.__class__
         tilemap.add_sprite(animal)
         animals.append(animal)
@@ -1125,12 +1153,21 @@ class Chicken(Item):
         return super().on_consumed_in_recipe()
 
 @spawn
-class Rabbit(Item):
+class Chicken(AnimalItem):
+    animal_cls = ChickenAnimal
+    food_wolf = 0.3
+    animal_anims = chicken_anims
+
+@spawn
+class Sheep(AnimalItem):
+    animal_cls = SheepAnimal
+    food_wolf = 0.6
+    animal_anims = sheep_anims
+
+@spawn
+class Rabbit(AnimalItem):
     food_wolf = 0.3
 
-    def on_consumed_in_recipe(self):
-        spawn_blood(player.x, player.y)
-        return super().on_consumed_in_recipe()
 
 class Recipe(object):
     '''
@@ -1189,7 +1226,7 @@ recipes = [
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
     Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
-    Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe([RawMeat, RawMeat], {Sheep: 1}, 'Kill for meat', sound=sound_scream),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
@@ -1663,8 +1700,13 @@ for layer in tilemap.layers:
                 class_name = image.properties.get('Class')
                 anim_name = image.properties.get('Anim')
                 if class_name == 'Chicken':
-                    animal = Animal(chicken_anims, tile.rect.center_x, tile.rect.center_y)
+                    animal = ChickenAnimal(chicken_anims, tile.rect.center_x, tile.rect.center_y)
                     animal.item_cls = Chicken
+                    animals.append(animal)
+                    tilemap.add_sprite(animal)
+                if class_name == 'Sheep':
+                    animal = SheepAnimal(sheep_anims, tile.rect.center_x, tile.rect.center_y)
+                    animal.item_cls = Sheep
                     animals.append(animal)
                     tilemap.add_sprite(animal)
                 elif class_name:
