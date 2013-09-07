@@ -1797,7 +1797,8 @@ for folder in object_sprite_data.folders:
         frame = Frame(image, file.pivot_x, file.pivot_y)
         anim = Anim([frame])
         object_anims[file.name] = anim
-object_anims['Item-Fire'] = spritesheet_anim('Item-Fire.png', 1, 4, 16, 16)
+object_anims['Fire'] = spritesheet_anim('Item-Fire.png', 1, 4, 16, 16)
+object_anims['Fire'].time_per_frame = 0.1
 
 blood_images = []
 blood_dribble_images = []
