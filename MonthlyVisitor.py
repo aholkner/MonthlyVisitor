@@ -48,6 +48,7 @@ sound_agony1 = bacon.Sound('res/sound/agony1.ogg')
 sound_agony2 = bacon.Sound('res/sound/agony2.ogg')
 sound_footsteps1 = bacon.Sound('res/sound/footsteps1.ogg')
 sound_footsteps2 = bacon.Sound('res/sound/footsteps2.ogg')
+sound_crunch1 = bacon.Sound('res/sound/crunch1.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -650,6 +651,7 @@ class Player(Character):
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneSkull')
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'BoneLegs')
             spawn_item_on_tile(self.get_drop_tile(), 'Bone', 'Bone')
+            sound_crunch1.play()
             self.eating_villager = False
             self.add_food_motive(1.0)
             self.wait(2.5)
