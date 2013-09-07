@@ -893,6 +893,7 @@ class Item(Sprite):
     food_wolf = 0
     path_cost_wolf = 0
     attackable_wolf = False
+    show_durability = False
 
     @classmethod
     def get_default_anim(cls):
@@ -934,7 +935,7 @@ class Item(Sprite):
         tile.add_item(self)
         tilemap.add_sprite(self)
 
-    def on_consumed_in_recipe(self):
+    def on_used_in_recipe(self, recipe):
         pass
 
     def on_consumed(self):
@@ -956,7 +957,7 @@ class Tree(Item):
     anim_name = 'Tree1.png'
     path_cost_wolf = 99999
 
-    def on_consumed_in_recipe(self):
+    def on_used_in_recipe(self, recipe):
         self.anim = object_anims['TreeStump']
         self.__class__ = TreeStump
 
@@ -975,7 +976,7 @@ class BerryPlant(Item):
     name = 'Berry Plant'
     can_pick_up = False
 
-    def on_consumed_in_recipe(self):
+    def on_used_in_recipe(self, recipe):
         self.anim = object_anims['BerryPlantEmpty']
         self.__class__ = BerryPlantEmpty
 
@@ -1026,7 +1027,7 @@ class IronRock(Item):
     can_pick_up = False
     path_cost_wolf = 99999
 
-    def on_consumed_in_recipe(self):
+    def on_used_in_recipe(self, recipe):
         self.destroy()
 
 @spawn
@@ -1061,13 +1062,24 @@ class CookedMeat(Item):
 class Vegetable(Item):
     food_human = 0.05
 
-@spawn
-class Pick(Item):
+class Tool(Item):
+    show_durability = True
+    durability = 1.0
     is_consumed_in_recipe = False
+    
+    def on_used_in_recipe(self, recipe):
+        super().on_used_in_recipe(recipe)
+        self.durability -= recipe.tool_durability_effect
+        if self.durability <= 0:
+            self.destroy()
 
 @spawn
-class Axe(Item):
-    is_consumed_in_recipe = False
+class Pick(Tool):
+    pass
+
+@spawn
+class Axe(Tool):
+    pass
 
 @spawn
 class Fire(Item):
@@ -1209,9 +1221,9 @@ class AnimalItem(Item):
         tilemap.add_sprite(animal)
         animals.append(animal)
 
-    def on_consumed_in_recipe(self):
+    def on_used_in_recipe(self, recipe):
         spawn_blood(player.x, player.y)
-        return super().on_consumed_in_recipe()
+        return super().on_used_in_recipe(recipe)
 
 @spawn
 class Chicken(AnimalItem):
@@ -1242,8 +1254,9 @@ class Recipe(object):
     :param inputs: dict of class to count
     '''
     sound = sound_craft1
+    tool_durability_effect = 0.5
 
-    def __init__(self, output, inputs, text=None, sound=None):
+    def __init__(self, output, inputs, text=None, sound=None, tool_durability_effect=0.5):
         if not isinstance(output, collections.Iterable):
             output = [output]
         self.outputs = output
@@ -1253,6 +1266,7 @@ class Recipe(object):
             self.name = output[0].__name__
         if sound:
             self.sound = sound
+        self.tool_durability_effect = tool_durability_effect
           
     def is_input(self, input):
         return input.__class__ in self.inputs
@@ -1285,8 +1299,8 @@ class ClothesRecipe(Recipe):
 recipes = [
     Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood'),
     Recipe([SmallIronRock, SmallIronRock, SmallIronRock], {Pick: 1, IronRock: 1}, 'Break up large iron rock'),
-    Recipe(Axe, {Stick: 1, Rock: 1}),
-    Recipe(Pick, {Stick: 1, Iron: 1}),
+    Recipe(Axe, {Stick: 1, Rock: 1}, tool_durability_effect=0.25),
+    Recipe(Pick, {Stick: 1, Iron: 1}, tool_durability_effect=0.25),
     Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
     Recipe(Fire, {Wood: 2, Coal: 1}),
     Recipe(Fence, {Wood: 2}),
@@ -1656,14 +1670,14 @@ class Inventory(object):
                     if initial_item.is_consumed_in_recipe:
                         if initial_item in self.items:
                             self.items.remove(initial_item)
-                        initial_item.on_consumed_in_recipe()
+                    initial_item.on_used_in_recipe(recipe)
                     initial_item = None
                 else:
                     for item in self.items:
                         if item.__class__ is item_class:
                             if item.is_consumed_in_recipe:
                                 self.items.remove(item)
-                                item.on_consumed_in_recipe()
+                            item.on_used_in_recipe(recipe)
                             break
 
         while len(self.items) > self.slots:
@@ -1681,6 +1695,10 @@ class Inventory(object):
         for i in range(self.slots):
             bacon.draw_image(self.slot_image, self.x + i * self.item_size_x - self.slot_image.width / 2, self.y - self.slot_image.height / 2)
         for item in self.items:
+            if item.show_durability:
+                bacon.set_color(0.5, 0, 0, 1.0)
+                Rect(item.x - 16, item.y + 16, item.x - 16 + 32 * item.durability, item.y + 18).fill()
+                bacon.set_color(1, 1, 1, 1)
             bacon.draw_image(item.inventory_image, item.x - 16, item.y - 16, item.x + 16, item.y + 16)
 
     def on_mouse_button(self, button, pressed):
