@@ -112,8 +112,9 @@ def parse_layer(tm, elem, tilesets):
                             tx = 0
                             ty += 1
 
-    if layer.name == 'Collision':
-        tm.layers.remove(layer)
+    if layer.name == 'Collision' or layer.name == 'Water':
+        if layer.name == 'Collision':
+            tm.layers.remove(layer)
         for i in range(len(layer.images)):
             if layer.images[i]:
                 try:
@@ -128,6 +129,8 @@ def parse_layer(tm, elem, tilesets):
                         tm.tiles[i].walkable_entrance = False
                         tm.tiles[i].entrance_owner = layer.images[i].properties['Entrance']
                 except KeyError:
+                    pass
+                except AttributeError:
                     pass
 
 def parse_object_group(tm, elem):
