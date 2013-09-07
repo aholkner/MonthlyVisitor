@@ -984,6 +984,10 @@ class Berries(Item):
     food_human = 0.05
 
 @spawn
+class Mushroom(Item):
+    food_human = 0.05
+
+@spawn
 class Clothes(Item):
     pass
 
@@ -994,6 +998,33 @@ class Wood(Item):
 @spawn
 class Rock(Item):
     pass
+
+@spawn
+class SmallRock(Item):
+    pass
+
+@spawn
+class SmallIronRock(Item):
+    pass
+
+@spawn
+class IronRock(Item):
+    walkable = False
+    can_pick_up = False
+    path_cost_wolf = 99999
+
+    def on_consumed_in_recipe(self):
+        self.destroy()
+
+@spawn
+class SmallCoalRock(Item):
+    pass
+
+
+@spawn
+class CoalRock(Item):
+    pass
+
 
 @spawn
 class Coal(Item):
@@ -1030,6 +1061,10 @@ class Fire(Item):
     walkable = False
     path_cost_wolf = 99999
     can_pick_up = False
+
+@spawn
+class Toadstool(Item):
+    pass
 
 @spawn
 class Fence(Item):
@@ -1236,6 +1271,7 @@ class ClothesRecipe(Recipe):
 
 recipes = [
     Recipe([Wood, Wood, Wood], {Axe: 1, Tree: 1}, 'Chop down for wood'),
+    Recipe([SmallIronRock, SmallIronRock, SmallIronRock], {Pick: 1, IronRock: 1}, 'Break up large iron rock'),
     Recipe(Axe, {Stick: 1, Rock: 1}),
     Recipe(Pick, {Stick: 1, Iron: 1}),
     #Recipe(Cage, {}),
@@ -1675,7 +1711,8 @@ for tileset in tilemap.tilesets:
         if hasattr(image, 'properties'):
             props = image.properties
             if 'Anim' in props:
-                object_anims[props['Anim']] = Anim([Frame(image, 16, 16)])
+                if props['Anim'] not in object_anims:
+                    object_anims[props['Anim']] = Anim([Frame(image, 16, 16)])
             if 'Class' in props:
                 _spawn_classes[props['Class']].inventory_image = image
             if 'Fence' in props:
