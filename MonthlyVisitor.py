@@ -54,6 +54,7 @@ sound_drop = bacon.Sound('res/sound/drop.ogg')
 sound_click = bacon.Sound('res/sound/click.ogg')
 sound_growl1 = bacon.Sound('res/sound/growl1.ogg')  # TODO
 sound_craft1 = bacon.Sound('res/sound/craft1.ogg')
+sound_eat = bacon.Sound('res/sound/eat.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -874,6 +875,7 @@ class Item(Sprite):
         elif self.food_wolf and player.is_wolf:
             player.add_food_motive(self.food_wolf)
             player.wait(0.5)
+        sound_eat.play()
 
     def on_attack(self):
         pass
