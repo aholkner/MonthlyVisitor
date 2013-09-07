@@ -217,6 +217,11 @@
    <property name="BloodDribble" value=""/>
   </properties>
  </tile>
+ <tile id="45">
+  <properties>
+   <property name="Class" value="Cow"/>
+  </properties>
+ </tile>
  <tile id="46">
   <properties>
    <property name="Class" value="Clothes"/>
