@@ -1087,6 +1087,20 @@ class Fire(Item):
     path_cost_wolf = 99999
     can_pick_up = False
 
+    durability = 1.0
+    is_consumed_in_recipe = False
+    
+    def on_used_in_recipe(self, recipe):
+        super().on_used_in_recipe(recipe)
+        self.durability -= recipe.tool_durability_effect
+        if self.durability <= 0:
+            self.__class__ = UsedFire
+            self.anim = object_anims['UsedFire']
+
+@spawn
+class UsedFire(Item):
+    can_pick_up = False
+
 @spawn
 class Toadstool(Item):
     pass
@@ -1255,7 +1269,7 @@ class Recipe(object):
     '''
     sound = sound_craft1
 
-    def __init__(self, output, inputs, text=None, sound=None, tool_durability_effect=0.5, outputs_to_inventory=True):
+    def __init__(self, output, inputs, text=None, sound=None, tool_durability_effect=0.25, outputs_to_inventory=True):
         if not isinstance(output, collections.Iterable):
             output = [output]
         self.outputs = output
@@ -1302,14 +1316,14 @@ recipes = [
     Recipe(Axe, {Stick: 1, Rock: 1}),
     Recipe(Pick, {Stick: 1, Iron: 1}),
     Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
-    Recipe(Fire, {Wood: 2, Coal: 1}),
+    Recipe(Fire, {Wood: 2, Coal: 1}, outputs_to_inventory=False),
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
     Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Sheep: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Cow: 1}, 'Kill for meat', sound=sound_scream),
-    Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
+    Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup, tool_durability_effect=0.5),
     Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
     Recipe(Stick, {Sapling: 1}, "Break off stick"),

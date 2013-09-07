@@ -1,7 +1,252 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="50" height="50" tilewidth="32" tileheight="32">
  <tileset firstgid="1" source="Tileset-Terrain.tsx"/>
- <tileset firstgid="257" source="Tileset-Interior.tsx"/>
+ <tileset firstgid="257" name="Tileset-Interior" tilewidth="32" tileheight="32">
+  <image source="Tileset-Interior.png" width="512" height="512"/>
+  <terraintypes>
+   <terrain name="Back Wall" tile="-1"/>
+  </terraintypes>
+  <tile id="23">
+   <properties>
+    <property name="Anim" value="UsedFire"/>
+    <property name="Class" value="UsedFire"/>
+   </properties>
+  </tile>
+  <tile id="39">
+   <properties>
+    <property name="Fence" value="R"/>
+   </properties>
+  </tile>
+  <tile id="40">
+   <properties>
+    <property name="Fence" value="LR"/>
+   </properties>
+  </tile>
+  <tile id="41">
+   <properties>
+    <property name="Fence" value="L"/>
+   </properties>
+  </tile>
+  <tile id="42">
+   <properties>
+    <property name="StrongFence" value="R"/>
+   </properties>
+  </tile>
+  <tile id="43">
+   <properties>
+    <property name="StrongFence" value="LR"/>
+   </properties>
+  </tile>
+  <tile id="44">
+   <properties>
+    <property name="StrongFence" value="L"/>
+   </properties>
+  </tile>
+  <tile id="55">
+   <properties>
+    <property name="Fence" value="U"/>
+   </properties>
+  </tile>
+  <tile id="56">
+   <properties>
+    <property name="Fence" value="UD"/>
+   </properties>
+  </tile>
+  <tile id="57">
+   <properties>
+    <property name="Fence" value="D"/>
+   </properties>
+  </tile>
+  <tile id="58">
+   <properties>
+    <property name="StrongFence" value="U"/>
+   </properties>
+  </tile>
+  <tile id="59">
+   <properties>
+    <property name="StrongFence" value="UD"/>
+   </properties>
+  </tile>
+  <tile id="60">
+   <properties>
+    <property name="StrongFence" value="D"/>
+   </properties>
+  </tile>
+  <tile id="71">
+   <properties>
+    <property name="Fence" value="DR"/>
+   </properties>
+  </tile>
+  <tile id="72">
+   <properties>
+    <property name="Fence" value="DLR"/>
+   </properties>
+  </tile>
+  <tile id="73">
+   <properties>
+    <property name="Fence" value="DL"/>
+   </properties>
+  </tile>
+  <tile id="74">
+   <properties>
+    <property name="StrongFence" value="DR"/>
+   </properties>
+  </tile>
+  <tile id="75">
+   <properties>
+    <property name="StrongFence" value="DLR"/>
+   </properties>
+  </tile>
+  <tile id="76">
+   <properties>
+    <property name="StrongFence" value="DL"/>
+   </properties>
+  </tile>
+  <tile id="87">
+   <properties>
+    <property name="Fence" value="UDR"/>
+   </properties>
+  </tile>
+  <tile id="88">
+   <properties>
+    <property name="Fence" value="UDLR"/>
+   </properties>
+  </tile>
+  <tile id="89">
+   <properties>
+    <property name="Fence" value="UDL"/>
+   </properties>
+  </tile>
+  <tile id="90">
+   <properties>
+    <property name="StrongFence" value="UDR"/>
+   </properties>
+  </tile>
+  <tile id="91">
+   <properties>
+    <property name="StrongFence" value="UDLR"/>
+   </properties>
+  </tile>
+  <tile id="92">
+   <properties>
+    <property name="StrongFence" value="UDL"/>
+   </properties>
+  </tile>
+  <tile id="103">
+   <properties>
+    <property name="Fence" value="UR"/>
+   </properties>
+  </tile>
+  <tile id="104">
+   <properties>
+    <property name="Fence" value="ULR"/>
+   </properties>
+  </tile>
+  <tile id="105">
+   <properties>
+    <property name="Fence" value="UL"/>
+   </properties>
+  </tile>
+  <tile id="106">
+   <properties>
+    <property name="StrongFence" value="UR"/>
+   </properties>
+  </tile>
+  <tile id="107">
+   <properties>
+    <property name="StrongFence" value="ULR"/>
+   </properties>
+  </tile>
+  <tile id="108">
+   <properties>
+    <property name="StrongFence" value="UL"/>
+   </properties>
+  </tile>
+  <tile id="125">
+   <properties>
+    <property name="SteelFence" value="R"/>
+   </properties>
+  </tile>
+  <tile id="126">
+   <properties>
+    <property name="SteelFence" value="LR"/>
+   </properties>
+  </tile>
+  <tile id="127">
+   <properties>
+    <property name="SteelFence" value="L"/>
+   </properties>
+  </tile>
+  <tile id="128" terrain=",,,0"/>
+  <tile id="129" terrain=",,0,0"/>
+  <tile id="130" terrain=",,0,"/>
+  <tile id="141">
+   <properties>
+    <property name="SteelFence" value="U"/>
+   </properties>
+  </tile>
+  <tile id="142">
+   <properties>
+    <property name="SteelFence" value="UD"/>
+   </properties>
+  </tile>
+  <tile id="143">
+   <properties>
+    <property name="SteelFence" value="D"/>
+   </properties>
+  </tile>
+  <tile id="144" terrain=",0,,0"/>
+  <tile id="145" terrain="0,0,0,0"/>
+  <tile id="146" terrain="0,,0,"/>
+  <tile id="157">
+   <properties>
+    <property name="SteelFence" value="DR"/>
+   </properties>
+  </tile>
+  <tile id="158">
+   <properties>
+    <property name="SteelFence" value="DLR"/>
+   </properties>
+  </tile>
+  <tile id="159">
+   <properties>
+    <property name="SteelFence" value="DL"/>
+   </properties>
+  </tile>
+  <tile id="160" terrain=",0,,"/>
+  <tile id="161" terrain="0,0,,"/>
+  <tile id="162" terrain="0,,,"/>
+  <tile id="173">
+   <properties>
+    <property name="SteelFence" value="UDR"/>
+   </properties>
+  </tile>
+  <tile id="174">
+   <properties>
+    <property name="SteelFence" value="UDLR"/>
+   </properties>
+  </tile>
+  <tile id="175">
+   <properties>
+    <property name="SteelFence" value="UDL"/>
+   </properties>
+  </tile>
+  <tile id="189">
+   <properties>
+    <property name="SteelFence" value="UR"/>
+   </properties>
+  </tile>
+  <tile id="190">
+   <properties>
+    <property name="SteelFence" value="ULR"/>
+   </properties>
+  </tile>
+  <tile id="191">
+   <properties>
+    <property name="SteelFence" value="UL"/>
+   </properties>
+  </tile>
+ </tileset>
  <tileset firstgid="513" source="Tileset-Landscape.tsx"/>
  <tileset firstgid="769" name="Tileset-ObjectSpawns" tilewidth="32" tileheight="32">
   <image source="Tileset-ObjectSpawns.png" width="256" height="256"/>
@@ -485,7 +730,7 @@
  </layer>
  <layer name="Spawns" width="50" height="50">
   <data encoding="base64" compression="zlib">
-   eJzt1zEKgDAMheFKQAUdnBw9gqujZ1Hvfwc7VKxgHS2v/B9kaZekaaB1DgAAAAAAAPhPY7kzAPIa/QxMPvoorrmo7A7kU4fzP0T70NkzVCnnHnurYwtri1CNavfq672xJ/ZWgbpSWuHcSzSHfgz0BSgG/1gA0HICuGADKw==
+   eJzt18EKQDAcx3FaoTg4yNEjuDp6Frz/O9hqy1bmaP3q+6lfisv/ZyaqCgAAAAAAAPhPa0pPAJQ12z2w2AxRwr6ozROU0/j7f4muQ2/SqFKePfbW4/DnNqGOas/V1/fGmbm2C/TK6fzskz0a0R7u3RviqPZwVj/7KLweAFL8xwKAlhuIQANv
   </data>
  </layer>
 </map>

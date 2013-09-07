@@ -4,6 +4,12 @@
  <terraintypes>
   <terrain name="Back Wall" tile="-1"/>
  </terraintypes>
+ <tile id="23">
+  <properties>
+   <property name="Anim" value="UsedFire"/>
+   <property name="Class" value="UsedFire"/>
+  </properties>
+ </tile>
  <tile id="39">
   <properties>
    <property name="Fence" value="R"/>
