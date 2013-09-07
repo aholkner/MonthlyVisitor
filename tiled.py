@@ -76,7 +76,7 @@ def parse_layer(tm, elem, tilesets):
 
         if matching_tileset:
             image = matching_tileset.images[gid - matching_tileset.firstgid]
-            layer.images[ty * tm.rows + tx] = image
+            layer.images[ty * tm.cols + tx] = image
 
     for child in elem:
         if child.tag == 'properties':

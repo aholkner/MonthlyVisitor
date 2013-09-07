@@ -2175,7 +2175,7 @@ class Game(bacon.Game):
                 sound_chime.play()
                 style = bacon.Style(font_ui)
                 runs = [bacon.GlyphRun(style, tutorial.text)]
-                tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 96, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
+                tutorial.glyph_layout = bacon.GlyphLayout(runs, 32, GAME_HEIGHT - 64, GAME_WIDTH - 64, None, align = bacon.Alignment.center, vertical_align = bacon.VerticalAlignment.bottom)
 
         if tutorial:
             bacon.set_color(0, 0, 0, 0.8)
