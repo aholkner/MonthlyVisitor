@@ -948,6 +948,28 @@ class Fence(Item):
         super(Fence, self).on_dropped(tile)
         self.update_fence_and_adjacent()
 
+        # Move player into walkable tile; try backward facing direction first
+        dx = dy = 0
+        if player.facing == 'left':
+            dx = 32
+        elif player.facing == 'right':
+            dx = -32
+        elif player.facing == 'up':
+            dy = 32
+        else:
+            dy = -32
+        if tilemap.get_tile_at(player.x + dx, player.y + dy).walkable:
+            player.x += dx
+            player.y += dy
+        else:
+            # Fall back on any nearby tile that's free
+            tile = player.get_drop_tile()
+            if tile:
+                player.x = tile.rect.center_x
+                player.y = tile.rect.center_y
+        player.path = []
+        tilemap.update_sprite_position(player)
+
     def update_fence_and_adjacent(self):
         adjacent = [
             tilemap.get_tile_at(self.x - tilemap.tile_width, self.y),
