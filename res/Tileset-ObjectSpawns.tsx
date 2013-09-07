@@ -77,6 +77,11 @@
    <property name="Class" value="Stick"/>
   </properties>
  </tile>
+ <tile id="15">
+  <properties>
+   <property name="Class" value="Reed"/>
+  </properties>
+ </tile>
  <tile id="16">
   <properties>
    <property name="Class" value="Chicken"/>
@@ -259,6 +264,11 @@
   <properties>
    <property name="Collision" value="Entrance"/>
    <property name="Entrance" value="Baker"/>
+  </properties>
+ </tile>
+ <tile id="54">
+  <properties>
+   <property name="Class" value="Sapling"/>
   </properties>
  </tile>
  <tile id="55">

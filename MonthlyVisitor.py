@@ -1283,7 +1283,6 @@ recipes = [
     Recipe([SmallIronRock, SmallIronRock, SmallIronRock], {Pick: 1, IronRock: 1}, 'Break up large iron rock'),
     Recipe(Axe, {Stick: 1, Rock: 1}),
     Recipe(Pick, {Stick: 1, Iron: 1}),
-    #Recipe(Cage, {}),
     Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
     Recipe(Fire, {Wood: 2, Coal: 1}),
     Recipe(Fence, {Wood: 2}),
@@ -1298,8 +1297,6 @@ recipes = [
     Recipe(Stick, {Sapling: 1}, "Break off stick"),
     Recipe(Berries, {BerryPlant: 1}, 'Pick berries', sound=sound_pickup),
     ClothesRecipe([], {Clothes: 1}, 'Wear clothes'),
-    #Recipe(Grass Suit
-    #Recipe(FishingRod)
 
 ]
 
