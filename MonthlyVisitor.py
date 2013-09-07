@@ -63,6 +63,9 @@ sound_dawn = bacon.Sound('res/sound/dawn.ogg')
 sound_scream = bacon.Sound('res/sound/scream.ogg')
 sound_attackfence1 = bacon.Sound('res/sound/attackfence1.ogg')
 sound_destroyfence1 = bacon.Sound('res/sound/destroyfence1.ogg')
+sound_cow = bacon.Sound('res/sound/cow.ogg')
+sound_chicken = bacon.Sound('res/sound/chicken.ogg')
+sound_sheep = bacon.Sound('res/sound/sheep.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -500,7 +503,7 @@ class Character(Sprite):
         self.motive_food = max(self.motive_food - bacon.timestep * 0.002, 0)
 
     def update_wolf_motives(self):
-        self.motive_food = max(self.motive_food - bacon.timestep * 0.03, 0.1)
+        self.motive_food = max(self.motive_food - bacon.timestep * 0.015, 0.1)
 
         # If we've reached the villager we're after
         if self.target_villager and distance(self, self.target_villager) < self.distance_wolf_villager_attack:
@@ -736,6 +739,9 @@ class Animal(Character):
     snare_attract_radius = 512
     snare_catch_radius = 8
 
+    sound = None
+    sound_cooldown = -1
+
     def can_walk(self, tile):
         return tile.walkable and tile.walkable_animal
 
@@ -743,9 +749,13 @@ class Animal(Character):
         if self.running:
             self.run_cooldown -= bacon.timestep
 
+        self.sound_cooldown -= bacon.timestep
+
         # Check for getting snared
         for snare in snares:
             if not snare.occupied and snare.rect.contains(self.x, self.y):
+                if self.sound:
+                    self.sound.play()
                 snare.occupied = True
                 self.snare = snare
                 self.x = snare.x
@@ -758,6 +768,9 @@ class Animal(Character):
 
         if not self.path:
             if distance(self, player) < self.danger_radius and self.run_cooldown > 0:
+                if self.sound and self.sound_cooldown < 0:
+                    self.sound.play()
+                    self.sound_cooldown = 5.0
                 self.running = True
                 self.run_cooldown -= bacon.timestep
                 dx = random.randrange(1, 5) * 32
@@ -815,6 +828,7 @@ class ChickenAnimal(Animal):
     snare_attract_radius = 512
     snare_catch_radius = 8
 
+    sound = sound_chicken
 
 class SheepAnimal(Animal):
     walk_speed = 50
@@ -827,7 +841,8 @@ class SheepAnimal(Animal):
     snare_attract_radius = 512
     snare_catch_radius = 8
 
-    
+    sound = sound_sheep
+
 class CowAnimal(Animal):
     walk_speed = 50
     run_speed = 170
@@ -839,6 +854,7 @@ class CowAnimal(Animal):
     snare_attract_radius = 512
     snare_catch_radius = 8
 
+    sound = sound_cow
 
 class Villager(Character):
     walk_speed = 50
@@ -1397,7 +1413,7 @@ recipes = [
     #Recipe(Snare, {Rope: 2, Vegetable: 1}),
     Recipe(AnimalNet, {Rope: 2, Rock: 2, Vegetable: 1}),
     Recipe(Rope, {Grass: 3}),
-    Recipe(Stick, {Sapling: 1}, "Break off stick"),
+    Recipe(Stick, {Sapling: 1}, "Break off stick", sound=sound_pickup),
     Recipe(Berries, {BerryPlant: 1}, 'Pick berries', sound=sound_pickup),
     ClothesRecipe([], {Clothes: 1}, 'Wear clothes'),
 
