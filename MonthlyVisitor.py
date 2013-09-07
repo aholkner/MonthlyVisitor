@@ -49,6 +49,11 @@ sound_agony2 = bacon.Sound('res/sound/agony2.ogg')
 sound_footsteps1 = bacon.Sound('res/sound/footsteps1.ogg')
 sound_footsteps2 = bacon.Sound('res/sound/footsteps2.ogg')
 sound_crunch1 = bacon.Sound('res/sound/crunch1.ogg')
+sound_pickup = bacon.Sound('res/sound/pickup.ogg')
+sound_drop = bacon.Sound('res/sound/drop.ogg')
+sound_click = bacon.Sound('res/sound/click.ogg')
+sound_growl1 = bacon.Sound('res/sound/growl1.ogg')  # TODO
+sound_craft1 = bacon.Sound('res/sound/craft1.ogg')
 
 class SpriteSheet(object):
     def __init__(self, image, cols, rows):
@@ -1105,6 +1110,8 @@ class Recipe(object):
     :param output: class to generate
     :param inputs: dict of class to count
     '''
+    sound = sound_craft1
+
     def __init__(self, output, inputs, text=None):
         if not isinstance(output, collections.Iterable):
             output = [output]
@@ -1126,7 +1133,7 @@ class Recipe(object):
         return True
 
     def on_craft(self):
-        pass
+        self.sound.play()
 
 class ClothesRecipe(Recipe):
     name = 'Clothes'
@@ -1435,6 +1442,8 @@ def show_craft_menu(item, x, y):
     
     if not game.menu.items:
         game.menu = None
+    else:
+        sound_click.play()
 
 
 class Inventory(object):
@@ -1470,6 +1479,7 @@ class Inventory(object):
         item.on_pick_up()
         self.add_item(item)
         self.layout()
+        sound_pickup.play()
         
     def add_item(self, item):
         if self.is_full:
@@ -1485,6 +1495,7 @@ class Inventory(object):
         if tile:
             item.on_dropped(tile)
         self.layout()
+        sound_drop.play()
 
     def remove(self, item):
         self.items.remove(item)
