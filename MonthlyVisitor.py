@@ -622,7 +622,10 @@ class Player(Character):
         self.update_anim()
         self.set_clothing(['Wolf'])
         for item in inventory.items[:]:
-            inventory.drop(item, self.get_drop_tile())
+            if isinstance(item, Fence):
+                item.destroy()
+            else:
+                inventory.drop(item, self.get_drop_tile())
 
     def end_wolf(self):
         sound_dawn.play()
@@ -1175,7 +1178,7 @@ recipes = [
     Recipe(Fire, {Wood: 2, Coal: 1}),
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
-    Recipe(SteelFence, {Steel: 1}),
+    Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Rabbit: 1}, 'Kill for meat', sound=sound_scream),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup),
