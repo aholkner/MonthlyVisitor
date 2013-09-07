@@ -101,8 +101,11 @@ class Tilemap(object):
         bisect.insort(self.scanlines[scan].sprites, sprite)
 
     def remove_sprite(self, sprite):
-        oldscan = sprite._scanline
-        self.scanlines[oldscan].sprites.remove(sprite)
+        try:
+            oldscan = sprite._scanline
+            self.scanlines[oldscan].sprites.remove(sprite)
+        except:
+            pass
 
     def update_sprite_position(self, sprite):
         oldscan = sprite._scanline
