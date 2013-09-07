@@ -1496,6 +1496,7 @@ class MenuRecipeHint(MenuHint):
             run = bacon.GlyphRun(style, text)
             self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
         self.layout()
+        self.content_width = max(line.content_width for line in self.lines)
 
 
 class MenuTextHint(MenuHint):
@@ -1539,7 +1540,10 @@ class MenuItem(object):
         
     def draw_hint(self):
         if self.hint:
-            self.hint.x = self.rect.x2
+            if self.rect.x2 + self.hint.content_width < GAME_WIDTH:
+                self.hint.x = self.rect.x2
+            else:
+                self.hint.x = self.rect.x1 - self.hint.content_width
             self.hint.y = self.rect.y2
             self.hint.draw()
 
