@@ -638,6 +638,7 @@ class Player(Character):
     def start_wolf(self):
         sound_monster.play()
         self.is_wolf = True
+        self.naked = False
         self.path = None
         self.running = True
         self.action = 'idle'
@@ -1815,12 +1816,12 @@ for layer in tilemap.layers:
                     animal.item_cls = Chicken
                     animals.append(animal)
                     tilemap.add_sprite(animal)
-                if class_name == 'Sheep':
+                elif class_name == 'Sheep':
                     animal = SheepAnimal(sheep_anims, tile.rect.center_x, tile.rect.center_y)
                     animal.item_cls = Sheep
                     animals.append(animal)
                     tilemap.add_sprite(animal)
-                if class_name == 'Cow':
+                elif class_name == 'Cow':
                     animal = CowAnimal(cow_anims, tile.rect.center_x, tile.rect.center_y)
                     animal.item_cls = Cow
                     animals.append(animal)
