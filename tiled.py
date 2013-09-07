@@ -127,7 +127,7 @@ def parse_layer(tm, elem, tilesets):
                     elif collision_type == 'Entrance':
                         tm.tiles[i].walkable_entrance = False
                         tm.tiles[i].entrance_owner = layer.images[i].properties['Entrance']
-                except AttributeError:
+                except KeyError:
                     pass
 
 def parse_object_group(tm, elem):
