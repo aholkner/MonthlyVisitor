@@ -1485,13 +1485,16 @@ class MenuHint(object):
             y -= line.content_height
 
 class MenuRecipeHint(MenuHint):
-    def __init__(self, recipe):
+    def __init__(self, recipe, extra_item):
         self.x = 0
         self.y = 0
         self.lines = []
         style = bacon.Style(font_ui)
         for (cls, count) in recipe.inputs.items():
-            satisfied = inventory.get_class_count(cls) >= count
+            satisfied_count = count
+            if extra_item and isinstance(extra_item, cls):
+                satisfied_count -= 1
+            satisfied = inventory.get_class_count(cls) >= satisfied_count
             text = '[%s] %dx %s' % ('X' if satisfied else ' ', count, cls.get_name())
             run = bacon.GlyphRun(style, text)
             self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
@@ -1508,6 +1511,7 @@ class MenuTextHint(MenuHint):
         run = bacon.GlyphRun(style, text)
         self.lines.append(bacon.GlyphLayout([run], 0, 0, width=280, height=None, align=bacon.Alignment.left, vertical_align=bacon.VerticalAlignment.bottom))
         self.layout()
+        self.content_width = self.lines[0].content_width
 
 class MenuItem(object):
     def __init__(self, text, x, y, func, disabled=False, hint=None):
@@ -1636,7 +1640,7 @@ def show_craft_menu(item, x, y):
     for recipe in recipes:
         if recipe.is_input(item):
             text = recipe.text
-            hint = MenuRecipeHint(recipe)
+            hint = MenuRecipeHint(recipe, extra_item)
             if not text:
                 text = 'Craft %s' % recipe.name
             if recipe.is_available(extra_item):
