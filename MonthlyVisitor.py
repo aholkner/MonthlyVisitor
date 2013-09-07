@@ -695,17 +695,8 @@ class Player(Character):
         # Check if we arrived on an animal
         for animal in animals:
             if distance(self, animal) < self.distance_player_pickup_animal:
-                if animal.snared:
-                    # Remove the snare
-                    for item in tile.items:
-                        if item is self.target_item:
-                            self.target_item = None
-                        if isinstance(item, Snare):
-                            item.destroy()
-
                 if not self.target_item and not inventory.is_full:
-                    # Only pick up the animal if it was snared and we were targetting the snare,
-                    # or we weren't targetting anything.
+                    # Only pick up the animal if it we weren't targetting anything.
                     item = animal.item_cls(animal.item_cls.get_default_anim(), 0, 0)
                     inventory.add_item(item)
                     tilemap.remove_sprite(animal)
@@ -729,7 +720,6 @@ class Animal(Character):
 
     snare_attract_radius = 512
     snare_catch_radius = 8
-    snared = False
 
     def can_walk(self, tile):
         return tile.walkable and tile.walkable_animal
@@ -740,28 +730,17 @@ class Animal(Character):
 
         # Check for getting snared
         for snare in snares:
-            if snare.rect.contains(self.x, self.y):
-                self.snared = True
-                snare.occupied = self
+            if not snare.occupied and snare.rect.contains(self.x, self.y):
+                snare.occupied = True
+                self.snare = snare
                 self.x = snare.x
                 self.y = snare.y
                 tilemap.update_sprite_position(self)
+                tilemap.get_tile_at(self.x, self.y).items.append(self)
+                animals.remove(self)
+                self.__class__ = self.item_cls
                 return
 
-        # Intermittently run on spot while snared
-        if self.snared:
-            if self.cooldown > 0:
-                self.cooldown -= bacon.timestep
-                return
-            if self.action == 'walk':
-                self.action = 'idle'
-            else:
-                self.action = 'walk'
-            self.wait(random.randint(1, 4) / 3.0)
-            self.update_anim()
-            return
-
-        
         if not self.path:
             if distance(self, player) < self.danger_radius and self.run_cooldown > 0:
                 self.running = True
@@ -800,10 +779,7 @@ class Animal(Character):
                     self.wait(random.randrange(1, 8))
                     self.path = [tilemap.get_tile_at(self.x + dx, self.y + dy)]
             
-        if self.snared:
-            self.update_anim()
-        else:
-            self.update_walk_target_movement()
+        self.update_walk_target_movement()
 
 
     def on_collide(self, tile):
@@ -1113,6 +1089,10 @@ class Axe(Tool):
     pass
 
 @spawn
+class Cleaver(Tool):
+    pass
+
+@spawn
 class Fire(Item):
     walkable = False
     path_cost_wolf = 99999
@@ -1247,9 +1227,23 @@ class Rope(Item):
 class Snare(Item):
     occupied = None
 
+    def destroy(self):
+        if self in snares:
+            snares.remove(self)
+        return super().destroy()
+
     def on_dropped(self, tile):
         super(Snare, self).on_dropped(tile)
         snares.append(self)
+
+        # Move player down; try backward facing direction first
+        tile = tilemap.get_tile_at(player.x, player.y + 32)
+        if tile.walkable:
+            player.x = tile.rect.center_x
+            player.y = tile.rect.center_y        
+        player.path = []
+        tilemap.update_sprite_position(player)
+        sound_craft1.play()
 
     def on_pick_up(self):
         try:
@@ -1266,6 +1260,7 @@ class AnimalItem(Item):
     food_wolf = 0.3
     animal_anims = None
     animal_cls = None
+    snare = None
 
     def on_dropped(self, tile):
         animal = self.animal_cls(self.animal_anims, tile.rect.center_x, tile.rect.center_y)
@@ -1273,9 +1268,20 @@ class AnimalItem(Item):
         tilemap.add_sprite(animal)
         animals.append(animal)
 
-    def on_used_in_recipe(self, recipe):
+    def on_consumed(self):
+        if self.snare:
+            self.snare.destroy()
+            self.snare = None
         spawn_blood(player.x, player.y)
+        return super().on_consumed()
+
+    def on_used_in_recipe(self, recipe):
+        if self.snare:
+            self.snare.destroy()
+        spawn_blood(player.x, player.y)
+        self.destroy()
         return super().on_used_in_recipe(recipe)
+
 
 @spawn
 class Chicken(AnimalItem):
@@ -1288,16 +1294,15 @@ class Sheep(AnimalItem):
     animal_cls = SheepAnimal
     food_wolf = 0.6
     animal_anims = sheep_anims
+    can_pick_up = False
     
 @spawn
 class Cow(AnimalItem):
     animal_cls = CowAnimal
     food_wolf = 0.6
     animal_anims = cow_anims
+    can_pick_up = False
 
-@spawn
-class Rabbit(AnimalItem):
-    food_wolf = 0.3
 
 
 class Recipe(object):
@@ -1355,12 +1360,13 @@ recipes = [
     Recipe(Axe, {Stick: 1, Rock: 1}),
     Recipe(Pick, {Stick: 1, Iron: 1}),
     Recipe(Steel, {Fire: 1, Iron: 1, Coal: 1}),
+    Recipe(Cleaver, {Stick: 1, Steel: 1}),
     Recipe(Fire, {Wood: 2, Coal: 1}, outputs_to_inventory=False),
     Recipe(Fence, {Wood: 2}),
     Recipe(StrongFence, {Fence: 1, Wood: 2}),
     Recipe(SteelFence, {Steel: 4}),
     Recipe(RawMeat, {Chicken: 1}, 'Kill for meat', sound=sound_scream),
-    Recipe([RawMeat, RawMeat], {Sheep: 1}, 'Kill for meat', sound=sound_scream),
+    Recipe([RawMeat, RawMeat], {Sheep: 1, Cleaver: 1}, 'Kill for meat', sound=sound_scream),
     Recipe([RawMeat, RawMeat], {Cow: 1}, 'Kill for meat', sound=sound_scream),
     Recipe(CookedMeat, {Fire: 1, RawMeat: 1}, 'Cook meat', sound=sound_pickup, tool_durability_effect=0.5),
     #Recipe(Snare, {Rope: 2, Vegetable: 1}),
@@ -1791,7 +1797,7 @@ def spawn_blood(x, y, dribble=False):
         image = random.choice(blood_images)
     blood_layer.images[ti] = image
 
-tilemap = tiled.parse('res/Tilemap.tmx')
+tilemap = tiled.parse('res/Tilemap-Test.tmx')
 for tileset in tilemap.tilesets:
     for image in tileset.images:
         if hasattr(image, 'properties'):
