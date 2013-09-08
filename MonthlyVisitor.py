@@ -1,5 +1,5 @@
 import logging
-logging.getLogger('bacon').addHandler(logging.NullHandler())
+logging.basicConfig()
 
 from math import floor, sqrt
 import os

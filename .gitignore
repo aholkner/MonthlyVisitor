@@ -6,3 +6,5 @@ debug.txt
 *.sublime-workspace
 *.pyperf
 bacon
+build
+dist

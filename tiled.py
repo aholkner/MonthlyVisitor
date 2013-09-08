@@ -155,6 +155,7 @@ def parse_object_group(tm, elem):
                             tilemap_object.properties[name] = value
 
 def parse(tmx_file):
+    tmx_file = bacon.get_resource_path(tmx_file)
     base_dir = os.path.dirname(tmx_file)
 
     tree = ET.parse(tmx_file)

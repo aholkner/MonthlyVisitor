@@ -35,6 +35,7 @@ def parse_folder(data, elem):
             parse_file(data, folder, file)
 
 def parse(scml_file):
+    scml_file = bacon.get_resource_path(scml_file)
     base_dir = os.path.dirname(scml_file)
 
     tree = ET.parse(scml_file)
